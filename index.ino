@@ -100,7 +100,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         <h1>LED Control</h1>
       </header>
       <h3>SPEED:</h3>
-      <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="0">
+      <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="127">
       <h3>DELAY:</h3>
       <input class="enabled slider" id="d" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="0">
       <h3>COLOR:</h3>
@@ -108,12 +108,15 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <h3>CHANGE MODE:</h3>
       <button id="mode" class="button" style="background-color:#EEE" onclick="changeMode();">MODE</button>
       <span id='mode-display'>--</span>
+      <!--BROKEN FOR NOW 
       <h3>COLOR PICKER:</h3>
       <div id="color-picker-wrapper">
         <input class = "color-pick" id="col" type="color" value="#ff0000" oninput="sendRGB();">
-      </div>
+      </div>-->
       <!--<h3>HUE:</h3>
       <input class="enabled slider" id="h" type="range" min="0" max="255" step="1" oninput="sendHue();" value="0">-->
+      <h3>BRIGHTNESS:</h3>
+      <input class="enabled slider" id="b" type="range" min="0" max="255" step="1" oninput="sendBrightness();" value="255">
       <h3>WHITE:</h3>
       <input class="enabled slider" id="w" type="range" min="0" max="255" step="1" oninput="sendW();" value="0">
       <h3>NUM DEVICES:</h3>
@@ -159,6 +162,15 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       console.log('SDC: ' + sdcstr);
       if (sendWS) connection.send(sdcstr);
     };
+
+    // send brightness:
+    function sendBrightness() {
+      var b = document.getElementById('b').value;
+      var b16 = 0<<8 | b;
+      var bstr = 'B' + b16.toString(16);
+      console.log('Brightness: ' + bstr);
+      if (sendWS) connection.send(bstr);
+    }
 
     function sendRGB () {
       // var r = document.getElementById('r').value** 2 / 255;
@@ -208,10 +220,12 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         document.getElementById('d').className = 'slider enabled';
         document.getElementById('c').className = 'slider enabled';
         document.getElementById('w').className = 'slider enabled';
+        document.getElementById('b').className = 'slider disabled';
         document.getElementById('s').disabled = false;
         document.getElementById('d').disabled = false;
         document.getElementById('c').disabled = false;
         document.getElementById('w').disabled = false;
+        document.getElementById('b').disabled = true;
 
         document.getElementById('mode-display').innerHTML = '(SDC)';
         if (sendWS) connection.send('SDC');
@@ -221,10 +235,12 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         document.getElementById('d').className = 'slider disabled';
         document.getElementById('c').className = 'slider enabled';
         document.getElementById('w').className = 'slider enabled';
+        document.getElementById('b').className = 'slider enabled';
         document.getElementById('s').disabled = true;
         document.getElementById('d').disabled = true;
         document.getElementById('c').disabled = false;
         document.getElementById('w').disabled = false;
+        document.getElementById('b').disabled = false;
 
         document.getElementById('mode-display').innerHTML = '(MANUAL)';
         if (sendWS) connection.send('MANUAL');   
@@ -234,10 +250,12 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         document.getElementById('d').className = 'slider disabled';
         document.getElementById('c').className = 'slider disabled';
         document.getElementById('w').className = 'slider disabled';
+        document.getElementById('b').className = 'slider disabled';
         document.getElementById('s').disabled = true;
         document.getElementById('d').disabled = true;
         document.getElementById('c').disabled = true;
         document.getElementById('w').disabled = true;
+        document.getElementById('b').disabled = true;
 
         document.getElementById('mode-display').innerHTML = '(BLACKOUT)';
         if (sendWS) connection.send('AUTO');
@@ -246,12 +264,12 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     };
 
     // restyle color picker:
-    var color_picker = document.getElementById("col");
-    var color_picker_wrapper = document.getElementById("color-picker-wrapper");
-    color_picker.onchange = function() {
-      color_picker_wrapper.style.backgroundColor = color_picker.value;    
-    }
-    color_picker_wrapper.style.backgroundColor = color_picker.value;
+    // var color_picker = document.getElementById("col");
+    // var color_picker_wrapper = document.getElementById("color-picker-wrapper");
+    // color_picker.onchange = function() {
+    //   color_picker_wrapper.style.backgroundColor = color_picker.value;    
+    // }
+    // color_picker_wrapper.style.backgroundColor = color_picker.value;
     //document.getElementById('w').disabled = true;
   </script>
 </body>

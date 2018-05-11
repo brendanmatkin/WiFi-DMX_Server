@@ -113,13 +113,23 @@ void loop() {
     timer = millis();
     switch (mode) {
       case AUTO:      // currently off 
-        //setZygoteDMX(0, 0, 0, 0, 127);          // fixture # 0 to half white.
+        //frameCounter = 0;                             // helps to start fades from 0 I think?
+        for (int i = 0; i < currentFixtures; i++) {
+//          float _temp = leds[i].v;
+//          _temp*=0.99;
+//          leds[i].v=(uint8_t
+          leds[i].v*=0.9;
+          CRGB _temp = leds[i];
+          setZygoteDMX( i, _temp.r, _temp.g, _temp.b, whiteLeds[i].r);
+        }
         break;
       case SDC:
         sdcZygotes();
         break;
       case MANUAL:
         for (int i = 0; i < currentFixtures; i++) {
+          leds[i].s = 255;
+          leds[i].v = brightness;
           CRGB _temp = leds[i];
           setZygoteDMX( i, _temp.r, _temp.g, _temp.b, whiteLeds[i].r);
           //setZygoteDMX(i, leds[i].r, leds[i].g, leds[i].b, whiteLeds[i].r);

@@ -45,9 +45,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
           int d = (sdc >> 8)  & 0xFF;               // delay
           int c =         sdc & 0xFF;               // color/hue
           sdc_speed = (256 - s)/5.0f;
+          sdc_delay = d;
           //leds[0].setHue(c);
           for (int i = 0; i < currentFixtures; i++) {
-            leds[0].h=c;
+            leds[i].h=c;
           }
           if (SERIAL_DEBUG) Serial.printf("[ws] S: %u, D: %u, C: %u, spd:%.2f\n", s, d, c, sdc_speed);
         } 
@@ -75,6 +76,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         else if (payload[0] == 'A') {
           mode = AUTO;
           if (SERIAL_DEBUG) Serial.printf("[ws] Mode: %d\n", mode);
+        }
+        else if (payload[0] == 'B') {
+          uint32_t _raw = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
+          int b = _raw & 0xFF;
+//          for (int i = 0; i < currentFixtures; i++) {
+//            leds[i].v = b;
+//          }
+          brightness = b;
+          if (SERIAL_DEBUG) Serial.printf("[ws] Brightness: %u\n", b);
         }
       }
       break;

@@ -54,6 +54,9 @@ IPAddress subnet(255, 255, 255, 0);           // subnet (for static)
 
 /* global variables */
 float sdc_speed = DMX_PERIOD;
+uint8_t sdc_delay = 0;
+unsigned long frameCounter = 0;
+uint8_t brightness = 255;
 
 enum Mode {
   SDC,
