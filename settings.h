@@ -17,7 +17,7 @@ const bool SERIAL_DEBUG = true;
 
 
 /* -- led settings -- */
-#define DMX_PERIOD        25                  // 25ms = 40 fps
+#define DMX_PERIOD        25.0f                  // 25ms = 40 fps
 #define MAX_FIXTURES      40                  // maximum number of pixels to control (currently considering each fixture 1 pixel because zygotes).
 uint8_t currentFixtures = 8;
 CHSV leds[MAX_FIXTURES];
@@ -50,6 +50,10 @@ const char* password_AP = "zygote";
 IPAddress local_IP(10, 0, 0, 1);              // static IP  - use staticIP[index] to get & set individual octets
 IPAddress gateway(10, 0, 0, 1);               // gateway (for static)
 IPAddress subnet(255, 255, 255, 0);           // subnet (for static)
+
+
+/* global variables */
+float sdc_speed = DMX_PERIOD;
 
 enum Mode {
   SDC,

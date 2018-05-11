@@ -79,6 +79,10 @@ void setup() {
   //EEPROM.get(addr, val);
 
   //sendTimer = millis();
+  for (int i = 0; i < MAX_FIXTURES; i++) {
+    leds[i].h = 0;
+    leds[i].s = 255;
+  }
   yield();
 }
 
@@ -108,8 +112,8 @@ void loop() {
   if (millis() - timer > DMX_PERIOD) {
     timer = millis();
     switch (mode) {
-      case AUTO:
-        setZygoteDMX(0, 0, 0, 0, 127);          // fixture # 0 to half white.
+      case AUTO:      // currently off 
+        //setZygoteDMX(0, 0, 0, 0, 127);          // fixture # 0 to half white.
         break;
       case SDC:
         sdcZygotes();

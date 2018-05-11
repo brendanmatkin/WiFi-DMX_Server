@@ -239,7 +239,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         document.getElementById('c').disabled = true;
         document.getElementById('w').disabled = true;
 
-        document.getElementById('mode-display').innerHTML = '(AUTO)';
+        document.getElementById('mode-display').innerHTML = '(BLACKOUT)';
         if (sendWS) connection.send('AUTO');
       }
       console.log('mode = ' + mode)
