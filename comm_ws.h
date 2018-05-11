@@ -80,17 +80,16 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         else if (payload[0] == 'B') {
           uint32_t _raw = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
           int b = _raw & 0xFF;
-//          for (int i = 0; i < currentFixtures; i++) {
-//            leds[i].v = b;
-//          }
           brightness = b;
           if (SERIAL_DEBUG) Serial.printf("[ws] Brightness: %u\n", b);
         }
         else if (payload[0] == 'C') {
           uint32_t _raw = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
           int c = _raw & 0xFF;
-          hueCycleSpeed = c/100.0f;
-          if (SERIAL_DEBUG) Serial.printf("[ws] Hue Cycle Spped: %.2f\n", hueCycleSpeed);
+          //hueCycleSpeed = c/100.0f;
+          if (c == 0) hueCycleSpeed = 0;
+          else hueCycleSpeed = map(c, 0, 255, 175, 1);
+          if (SERIAL_DEBUG) Serial.printf("[ws] Hue Cycle Spped: %u\n", hueCycleSpeed);
         }
       }
       break;

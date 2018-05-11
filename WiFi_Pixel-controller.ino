@@ -112,13 +112,13 @@ void loop() {
   if (millis() - timer > DMX_PERIOD) {
     timer = millis();
     switch (mode) {
-      case AUTO:      // currently off 
+      case AUTO:      // currently off
         //frameCounter = 0;                             // helps to start fades from 0 I think?
         for (int i = 0; i < currentFixtures; i++) {
-//          float _temp = leds[i].v;
-//          _temp*=0.99;
-//          leds[i].v=(uint8_t
-          leds[i].v*=0.9;
+          //          float _temp = leds[i].v;
+          //          _temp*=0.99;
+          //          leds[i].v=(uint8_t
+          leds[i].v *= 0.9;
           CRGB _temp = leds[i];
           setZygoteDMX( i, _temp.r, _temp.g, _temp.b, whiteLeds[i].r);
         }
@@ -127,8 +127,13 @@ void loop() {
         sdcZygotes();
         break;
       case MANUAL:
+        if (millis() - hueTimer > hueCycleSpeed && hueCycleSpeed != 0) {
+          hueTimer = millis();
+          for (int i = 0; i < currentFixtures; i++) {
+            leds[i].h++;
+          }
+        }
         for (int i = 0; i < currentFixtures; i++) {
-          leds[i].h+=hueCycleSpeed;
           leds[i].s = 255;
           leds[i].v = brightness;
           CRGB _temp = leds[i];

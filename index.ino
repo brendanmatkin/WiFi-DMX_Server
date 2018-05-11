@@ -97,7 +97,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 <body>
     <div class = "container">
       <header>
-        <h1>DMX Server</h1>
+        <h1>PIXEL Server</h1>
       </header>
       <h3>SPEED:</h3>
       <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="127">
