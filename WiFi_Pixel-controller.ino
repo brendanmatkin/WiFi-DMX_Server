@@ -22,7 +22,6 @@ ESP8266WebServer server(80);            // http server
 
 
 
-
 /* format bytes helper function */
 String formatBytes(size_t bytes) {
   if (bytes < 1024) {
@@ -47,7 +46,8 @@ void setZygoteDMX( uint8_t fixture, uint8_t red, uint8_t green, uint8_t blue, ui
   dmx.write( _offset + 4, white );
   //dmx.write( _offset + 5, strobe );
   //  dmx.update();
-  if (SERIAL_DEBUG) Serial.printf("[dmx] Off: %u, R: %u, G: %u, B: %u, W: %u\n", _offset, red, green, blue, white);
+  //if (SERIAL_DEBUG) Serial.printf("[dmx] Off: %u, R: %u, G: %u, B: %u, W: %u\n", _offset, red, green, blue, white);
+  //if (SERIAL_DEBUG && fixture == 0) Serial.printf("[dmx] Off: %u, R: %u, G: %u, B: %u, W: %u\n", _offset, red, green, blue, white);
 }
 
 
@@ -107,6 +107,12 @@ void loop() {
     timer = millis();
     if (autoControl) {
       setZygoteDMX(0, 0, 0, 0, 127);          // fixture # 0 to half white.
+    }
+    else {
+      for (int i = 0; i < currentFixtures; i++) {
+        setZygoteDMX(i, leds[i].r, leds[i].g, leds[i].b, whiteLeds[i].r);
+      }
+      
     }
     dmx.update();
     //if (SERIAL_DEBUG) Serial.printf("[dmx] update\n");

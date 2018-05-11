@@ -60,41 +60,33 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     case WStype_CONNECTED: {
         IPAddress ip = webSocket.remoteIP(num);
         if (SERIAL_DEBUG) Serial.printf("[ws] [%u] Connected from url: %u.%u.%u.%u; url: %s replying...\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-
-        //webSocket.sendTXT(num, LEDON, strlen(LEDON)); // client listens for LEDON which matches id of button
-        //      char connJSON[jsonSendSize];
-        //      serializeJSON_connected(connJSON);
-        //      webSocket.sendTXT(connJSON);    // send to server
+        String _init = 'I' + String(currentFixtures);
+        webSocket.sendTXT(num, _init);
       }
       break;
     case WStype_TEXT: {
         if (SERIAL_DEBUG) Serial.printf("[ws] [%u] got text: %s\n", num, payload);
-        if (payload[0] == '#') {            // we get RGB data
+        if (payload[0] == '#') {                    // get RGB data
           uint32_t rgb = (uint32_t) strtol((const char *) &payload[1], NULL, 16);   // decode rgb data
-//          int r = ((rgb >> 20) & 0x3FF);                     // 10 bits per color, so R: bits 20-29
-//          int g = ((rgb >> 10) & 0x3FF);                     // G: bits 10-19
-//          int b =          rgb & 0x3FF;                      // B: bits  0-9
-//          //int w =          rgb & 0x3FF;                      // B: bits  0-9
-//          int r = ((rgb >> 24) & 0xFF);
-//          int g = ((rgb >> 16) & 0xFF);
-//          int b = ((rgb >> 8)  & 0xFF);
-//          int w =          rgb & 0xFF;
           int r = ((rgb >> 16) & 0xFF);
           int g = ((rgb >> 8)  & 0xFF);
           int b =          rgb & 0xFF;
-          
-          //setZygoteDMX(0, r/4, g/4, b/4, 0);                 // set Zygote #1 RGB. 
-          setZygoteDMX(0, r, g, b, 0);                 // set Zygote #1 RGB. 
-          
+          leds[0].setRGB(r, g, b);
           if (SERIAL_DEBUG) Serial.printf("[ws] R: %u, G: %u, B: %u\n", r, g, b);
-        } else if (payload[0] == 'R') {                      // the browser sends an R when the rainbow effect is enabled
-          //rainbow = true;
-        } else if (payload[0] == 'N') {                      // the browser sends an N when the rainbow effect is disabled
-          //rainbow = false;
+        } else if (payload[0] == '&') {             // get SDC data
+          uint32_t sdc = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
+          int s = (sdc >> 16) & 0xFF;               // speed
+          int d = (sdc >> 8)  & 0xFF;               // delay
+          int c =         sdc & 0xFF;               // color/hue
+          leds[0].setHue(c);
+        } else if (payload[0] == 'N') {             // the browser sends an N when the rainbow effect is disabled
+          uint32_t _num = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
+          currentFixtures = _num & 0xFF;
+          if (SERIAL_DEBUG) Serial.printf("[ws] currentFixtures: %u\n", currentFixtures);
         } else if (payload[0] == 'W') {
           uint32_t _raw = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
           int w = _raw & 0xFF;
-          if (SERIAL_DEBUG) Serial.printf("[ws] W: %u\n", w);
+          if (SERIAL_DEBUG) Serial.printf("[ws] White: %u\n", w);
         }
       }
       break;

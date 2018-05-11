@@ -8,10 +8,19 @@
 #include <WebSocketsServer.h>
 #include <Hash.h>
 
+#include <FastLED.h>
+
 //#define DBG_OUTPUT_PORT Serial
 const bool SERIAL_DEBUG = true;
 #define DMX_AP true
 
+
+
+/* -- led settings -- */
+#define MAX_FIXTURES  40                       // maximum number of pixels to control (currently considering each fixture 1 pixel because zygotes).
+uint8_t currentFixtures = 8;
+CRGB leds[MAX_FIXTURES];
+CRGB whiteLeds[MAX_FIXTURES];
 
 
 
@@ -36,8 +45,8 @@ const char* password =    "PASSWORD";
 const char* ssid_AP  =    "DMX";
 const char* password_AP = "zygote";
 
-IPAddress local_IP(1, 1, 1, 1);              // static IP  - use staticIP[index] to get & set individual octets
-IPAddress gateway(1, 1, 1, 1);               // gateway (for static)
+IPAddress local_IP(10, 0, 0, 1);              // static IP  - use staticIP[index] to get & set individual octets
+IPAddress gateway(10, 0, 0, 1);               // gateway (for static)
 IPAddress subnet(255, 255, 255, 0);           // subnet (for static)
 
 
