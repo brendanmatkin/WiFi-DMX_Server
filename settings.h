@@ -17,10 +17,12 @@ const bool SERIAL_DEBUG = true;
 
 
 /* -- led settings -- */
-#define MAX_FIXTURES  40                       // maximum number of pixels to control (currently considering each fixture 1 pixel because zygotes).
+#define DMX_PERIOD        25                  // 25ms = 40 fps
+#define MAX_FIXTURES      40                  // maximum number of pixels to control (currently considering each fixture 1 pixel because zygotes).
 uint8_t currentFixtures = 8;
-CRGB leds[MAX_FIXTURES];
+CHSV leds[MAX_FIXTURES];
 CRGB whiteLeds[MAX_FIXTURES];
+
 
 
 
@@ -49,6 +51,10 @@ IPAddress local_IP(10, 0, 0, 1);              // static IP  - use staticIP[index
 IPAddress gateway(10, 0, 0, 1);               // gateway (for static)
 IPAddress subnet(255, 255, 255, 0);           // subnet (for static)
 
-
+enum Mode {
+  SDC,
+  MANUAL,
+  AUTO
+}mode = SDC;
 
 #endif /* SETTINGS_H */

@@ -71,22 +71,40 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
           int r = ((rgb >> 16) & 0xFF);
           int g = ((rgb >> 8)  & 0xFF);
           int b =          rgb & 0xFF;
-          leds[0].setRGB(r, g, b);
+          //leds[0].setRGB(r, g, b);
+          leds[0] = rgb2hsv_approximate(CRGB(r, g, b));
           if (SERIAL_DEBUG) Serial.printf("[ws] R: %u, G: %u, B: %u\n", r, g, b);
-        } else if (payload[0] == '&') {             // get SDC data
+        } 
+        else if (payload[0] == '&') {             // get SDC data
           uint32_t sdc = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
           int s = (sdc >> 16) & 0xFF;               // speed
           int d = (sdc >> 8)  & 0xFF;               // delay
           int c =         sdc & 0xFF;               // color/hue
-          leds[0].setHue(c);
-        } else if (payload[0] == 'N') {             // the browser sends an N when the rainbow effect is disabled
+          //leds[0].setHue(c);
+          leds[0].h=c;
+        } 
+        else if (payload[0] == 'N') {             // number of devices
           uint32_t _num = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
           currentFixtures = _num & 0xFF;
           if (SERIAL_DEBUG) Serial.printf("[ws] currentFixtures: %u\n", currentFixtures);
-        } else if (payload[0] == 'W') {
+        } 
+        else if (payload[0] == 'W') {
           uint32_t _raw = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
           int w = _raw & 0xFF;
+          whiteLeds[0].r = w;
           if (SERIAL_DEBUG) Serial.printf("[ws] White: %u\n", w);
+        }
+        else if (payload[0] == 'M') {
+          mode = MANUAL;
+          if (SERIAL_DEBUG) Serial.printf("[ws] Mode: %d\n", mode);
+        }
+        else if (payload[0] == 'S') {
+          mode = SDC;
+          if (SERIAL_DEBUG) Serial.printf("[ws] Mode: %d\n", mode);
+        }
+        else if (payload[0] == 'A') {
+          mode = AUTO;
+          if (SERIAL_DEBUG) Serial.printf("[ws] Mode: %d\n", mode);
         }
       }
       break;

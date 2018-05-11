@@ -96,25 +96,34 @@ void loop() {
   }
   else if (digitalRead(BOOTLOAD_PIN) == LOW && millis() - buttonTimer >= 2000) {
     buttonTimer = millis();
-    autoControl = !autoControl;
+    //autoControl = !autoControl;
+    if (mode == AUTO) mode = MANUAL;
+    else mode = AUTO;
     if (SERIAL_DEBUG) Serial.printf("[button] autoControl now %s\n", autoControl ? "true" : "false");
     if (!autoControl) setZygoteDMX(0, 0, 0, 0, 0);          // fixture # 0 to off.
   }
 
   /* DMX */
   static uint32_t timer;
-  if (millis() - timer > 25) {
+  if (millis() - timer > DMX_PERIOD) {
     timer = millis();
-    if (autoControl) {
-      setZygoteDMX(0, 0, 0, 0, 127);          // fixture # 0 to half white.
-    }
-    else {
-      for (int i = 0; i < currentFixtures; i++) {
-        setZygoteDMX(i, leds[i].r, leds[i].g, leds[i].b, whiteLeds[i].r);
-      }
-      
+    switch (mode) {
+      case AUTO:
+        setZygoteDMX(0, 0, 0, 0, 127);          // fixture # 0 to half white.
+        break;
+      case SDC:
+        sdcZygotes();
+        break;
+      case MANUAL:
+        for (int i = 0; i < currentFixtures; i++) {
+          CRGB _temp = leds[i];
+          setZygoteDMX( i, _temp.r, _temp.g, _temp.b, whiteLeds[i].r);
+          //setZygoteDMX(i, leds[i].r, leds[i].g, leds[i].b, whiteLeds[i].r);
+        }
+        break;
+      default:
+        break;
     }
     dmx.update();
-    //if (SERIAL_DEBUG) Serial.printf("[dmx] update\n");
   }
 }

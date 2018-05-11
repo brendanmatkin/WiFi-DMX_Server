@@ -47,6 +47,12 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       background: #101010;
       cursor: pointer;
   }
+  .disabled {
+    opacity: 0.3;
+  }
+  .disabled:hover {
+    opacity: 0.3;
+  }
 
   #col {
 
@@ -120,7 +126,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
   <script>
     // http://minifycode.com/html-minifier/ this minifier strips comments
     // http://unminify.com/ this is a good unminifier
-    var mode = false;
+    //var mode = false;
+    var mode = 0;
     var sendWS = true;
     if (sendWS) {
       var connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
@@ -193,39 +200,49 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     };
     
     function changeMode() {
-      mode = !mode;
-      if (mode) {
-        document.getElementById('mode-display').innerHTML = '(Manual Control)';
-        if (sendWS) connection.send('Manual');   
-      } else {
+      mode++;
+      mode = mode%3;
+      
+      if (mode == 0) {
+        document.getElementById('s').className = 'slider enabled';
+        document.getElementById('d').className = 'slider enabled';
+        document.getElementById('c').className = 'slider enabled';
+        document.getElementById('w').className = 'slider enabled';
+        document.getElementById('s').disabled = false;
+        document.getElementById('d').disabled = false;
+        document.getElementById('c').disabled = false;
+        document.getElementById('w').disabled = false;
+
         document.getElementById('mode-display').innerHTML = '(SDC)';
         if (sendWS) connection.send('SDC');
+      } 
+      else if (mode == 1) {
+        document.getElementById('s').className = 'slider disabled';
+        document.getElementById('d').className = 'slider disabled';
+        document.getElementById('c').className = 'slider enabled';
+        document.getElementById('w').className = 'slider enabled';
+        document.getElementById('s').disabled = true;
+        document.getElementById('d').disabled = true;
+        document.getElementById('c').disabled = false;
+        document.getElementById('w').disabled = false;
+
+        document.getElementById('mode-display').innerHTML = '(MANUAL)';
+        if (sendWS) connection.send('MANUAL');   
+      } 
+      else {
+        document.getElementById('s').className = 'slider disabled';
+        document.getElementById('d').className = 'slider disabled';
+        document.getElementById('c').className = 'slider disabled';
+        document.getElementById('w').className = 'slider disabled';
+        document.getElementById('s').disabled = true;
+        document.getElementById('d').disabled = true;
+        document.getElementById('c').disabled = true;
+        document.getElementById('w').disabled = true;
+
+        document.getElementById('mode-display').innerHTML = '(AUTO)';
+        if (sendWS) connection.send('AUTO');
       }
       console.log('mode = ' + mode)
-    };
-
-    function rainbowEffect () {
-    //   rainbowEnable = ! rainbowEnable;
-    //   if (rainbowEnable) {
-    //     connection.send("R");
-    //     document.getElementById('rainbow').style.backgroundColor = '#00878F';
-    //     document.getElementById('r').className = 'disabled';
-    //     document.getElementById('g').className = 'disabled';
-    //     document.getElementById('b').className = 'disabled';
-    //     document.getElementById('r').disabled = true;
-    //     document.getElementById('g').disabled = true;
-    //     document.getElementById('b').disabled = true;
-    //   } else {
-    //     connection.send("N");
-    //     document.getElementById('rainbow').style.backgroundColor = '#999';
-    //     document.getElementById('r').className = 'enabled';
-    //     document.getElementById('g').className = 'enabled';
-    //     document.getElementById('b').className = 'enabled';
-    //     document.getElementById('r').disabled = false;
-    //     document.getElementById('g').disabled = false;
-    //     document.getElementById('b').disabled = false;
-    //     sendRGB();
-    //   }
     };
 
     // restyle color picker:
