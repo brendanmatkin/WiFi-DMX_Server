@@ -97,14 +97,14 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 <body>
     <div class = "container">
       <header>
-        <h1>LED Control</h1>
+        <h1>DMX Server</h1>
       </header>
       <h3>SPEED:</h3>
       <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="127">
       <h3>DELAY:</h3>
       <input class="enabled slider" id="d" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="0">
       <h3>COLOR:</h3>
-      <input class="enabled slider" id="c" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="0">
+      <input class="enabled slider" id="c" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="160">
       <h3>CHANGE MODE:</h3>
       <button id="mode" class="button" style="background-color:#EEE" onclick="changeMode();">MODE</button>
       <span id='mode-display'>--</span>
@@ -115,6 +115,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       </div>-->
       <!--<h3>HUE:</h3>
       <input class="enabled slider" id="h" type="range" min="0" max="255" step="1" oninput="sendHue();" value="0">-->
+      <h3>HUE CYCLE SPEED:</h3>
+      <input class="enabled slider" id="hc" type="range" min="0" max="255" step="1" oninput="sendCycleSpeed();" value="0">
       <h3>BRIGHTNESS:</h3>
       <input class="enabled slider" id="b" type="range" min="0" max="255" step="1" oninput="sendBrightness();" value="255">
       <h3>WHITE:</h3>
@@ -170,6 +172,15 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       var bstr = 'B' + b16.toString(16);
       console.log('Brightness: ' + bstr);
       if (sendWS) connection.send(bstr);
+    }
+
+    // send hue cycle speed:
+    function sendCycleSpeed() {
+      var c = document.getElementById('hc').value;  // c = cycle, hc = hue cycle (already used id=c)
+      var c16 = 0<<8 | c;
+      var cstr = 'C' + c16.toString(16);
+      console.log('Hue Cycle Speed: ' + cstr);
+      if (sendWS) connection.send(cstr);
     }
 
     function sendRGB () {

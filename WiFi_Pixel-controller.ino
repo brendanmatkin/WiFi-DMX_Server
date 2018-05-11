@@ -80,7 +80,7 @@ void setup() {
 
   //sendTimer = millis();
   for (int i = 0; i < MAX_FIXTURES; i++) {
-    leds[i].h = 0;
+    leds[i].h = DEFAULT_HUE;
     leds[i].s = 255;
   }
   yield();
@@ -128,6 +128,7 @@ void loop() {
         break;
       case MANUAL:
         for (int i = 0; i < currentFixtures; i++) {
+          leds[i].h+=hueCycleSpeed;
           leds[i].s = 255;
           leds[i].v = brightness;
           CRGB _temp = leds[i];

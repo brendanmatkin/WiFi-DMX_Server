@@ -86,6 +86,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
           brightness = b;
           if (SERIAL_DEBUG) Serial.printf("[ws] Brightness: %u\n", b);
         }
+        else if (payload[0] == 'C') {
+          uint32_t _raw = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
+          int c = _raw & 0xFF;
+          hueCycleSpeed = c/100.0f;
+          if (SERIAL_DEBUG) Serial.printf("[ws] Hue Cycle Spped: %.2f\n", hueCycleSpeed);
+        }
       }
       break;
     case WStype_BIN:
