@@ -64,9 +64,9 @@ void sdcZygotes() {
   for (int i = 0; i < currentFixtures; i++) {
     uint8_t _bright = sin8((frameCounter * DMX_PERIOD / sdc_speed) + sdc_delay * i);
     //float bright = (exp(sin(frameCounter*DMX_PERIOD/6)) - 0.36787944)*108.0;
-    int bright = map(_bright, 1, 255, -30, 255);
+    int bright = map(_bright, 1, 255, -35, 255);
     bright = constrain(bright, 0, 255);
-    float coef = 0.22;
+    float coef = 0.25;
     avg_bright[i] = coef * bright + (1.0 - coef) * avg_bright[i];
     leds[i].v = avg_bright[i];
     CRGB _temp = leds[i];
