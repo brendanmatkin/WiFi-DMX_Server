@@ -10,8 +10,16 @@
     color: #020202;
   }
   .container {
-    width: 75%;
+    width: 80%;
     margin: 0 auto;
+  }
+  h3 {
+    text-transform: lowercase;
+  }
+
+  .label {
+      font-weight:normal;
+      font-size: 80%;
   }
 
   /* slider css: */
@@ -53,6 +61,7 @@
     opacity: 0.3;
   }
 
+
   #col {
 
   }
@@ -64,10 +73,16 @@
     margin: 0;
   }
 
-  .button {
-    width: 100px;
+  button {
+    width: 30%;
     height: 30px;
-    font-size:18px;
+    font-size:12px;
+    margin: 1%;
+    border:none;
+  }
+  button:disabled {
+    border: 2px solid #0033cc;
+    color: #0033cc;
   }
 
   /* color picker css: */
@@ -96,30 +111,28 @@
 <body>
     <div class = "container">
       <header>
-        <h1>PIXEL Server</h1>
+        <h1>Pixel Controller</h1>
       </header>
-      <h3>SPEED:</h3>
+
+      <h3>ANIMATION SPEED: <span class="label" id="label_s"></span></h3>
       <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="127">
-      <h3>DELAY:</h3>
+      <h3>DELAY: <span class="label" id="label_d"></span></h3>
       <input class="enabled slider" id="d" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="0">
-      <h3>COLOR:</h3>
+      <h3>COLOR: <span class="label" id="label_c"></span></h3>
       <input class="enabled slider" id="c" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="160">
+      
       <h3>CHANGE MODE:</h3>
-      <button id="mode" class="button" style="background-color:#EEE" onclick="changeMode();">MODE</button>
-      <span id='mode-display'>--</span>
-      <!--BROKEN FOR NOW 
-      <h3>COLOR PICKER:</h3>
-      <div id="color-picker-wrapper">
-        <input class = "color-pick" id="col" type="color" value="#ff0000" oninput="sendRGB();">
-      </div>-->
-      <!--<h3>HUE:</h3>
-      <input class="enabled slider" id="h" type="range" min="0" max="255" step="1" oninput="sendHue();" value="0">-->
-      <h3>HUE CYCLE SPEED:</h3>
+      <button id="mode0" class="button" style="background-color:#EEE" onclick="setMode(0);">LFO</button>
+      <button id="mode1" class="button" style="background-color:#EEE" onclick="setMode(1);">MANUAL</button>
+      <button id="mode2" class="button" style="background-color:#EEE" onclick="setMode(2);">BLACKOUT</button>
+
+      <h3>HUE CYCLE SPEED: <span class="label" id="label_hc"></span></h3>
       <input class="enabled slider" id="hc" type="range" min="0" max="255" step="1" oninput="sendCycleSpeed();" value="0">
-      <h3>BRIGHTNESS:</h3>
+      <h3>BRIGHTNESS: <span class="label" id="label_b"></span></h3>
       <input class="enabled slider" id="b" type="range" min="0" max="255" step="1" oninput="sendBrightness();" value="255">
-      <h3>WHITE:</h3>
+      <h3>WHITE: <span class="label" id="label_w"></span></h3>
       <input class="enabled slider" id="w" type="range" min="0" max="255" step="1" oninput="sendW();" value="0">
+      
       <h3>NUM DEVICES:</h3>
       <input class="fields" id="numDev" type="number" name="num" min="1" max="40" placeholder="number" oninput="submitDevices();">
       <!--<input class="enabled slider" id="numDev" type="range" min="0" max="50" step="1" oninput="submitDevices();" value="1">
@@ -130,9 +143,10 @@
   <script>
     // http://minifycode.com/html-minifier/ this minifier strips comments
     // http://unminify.com/ this is a good unminifier
+
     //var mode = false;
-    var mode = 0;
-    var sendWS = true;
+    var mode = 0;   // 0 = LFO, 1 = MANUAL, 2 = BLACKOUT
+    var sendWS = false;
     if (sendWS) {
       var connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
       //var connection = new WebSocket('ws://127.0.0.1:8080/');
@@ -152,12 +166,25 @@
         console.log('WebSocket connection closed');
       };
     }
+    // init: (change these to GET from ws)
+    setMode(0);
+    sendSDC();
+    sendBrightness();
+    sendCycleSpeed();
+    sendW();
+
     
     // send speed, delay, color
     function sendSDC() {
       var s = document.getElementById('s').value;
       var d = document.getElementById('d').value;
       var c = document.getElementById('c').value;
+      // set these vars with value from esp instead! 
+      var __c = c/255.0*360.0;
+      document.getElementById('c').style.backgroundColor = `hsl(${__c}, 100%, 50%)`;
+      document.getElementById('label_s').innerHTML = s;
+      document.getElementById('label_d').innerHTML = d;
+      document.getElementById('label_c').innerHTML = c;
       var sdc = s<<16 | d<<8 | c;
       var sdcstr = '&' + sdc.toString(16);
       console.log('SDC: ' + sdcstr);
@@ -167,6 +194,7 @@
     // send brightness:
     function sendBrightness() {
       var b = document.getElementById('b').value;
+      document.getElementById('label_b').innerHTML = b;
       var b16 = 0<<8 | b;
       var bstr = 'B' + b16.toString(16);
       console.log('Brightness: ' + bstr);
@@ -176,6 +204,7 @@
     // send hue cycle speed:
     function sendCycleSpeed() {
       var c = document.getElementById('hc').value;  // c = cycle, hc = hue cycle (already used id=c)
+      document.getElementById('label_hc').innerHTML = c;
       var c16 = 0<<8 | c;
       var cstr = 'C' + c16.toString(16);
       console.log('Hue Cycle Speed: ' + cstr);
@@ -206,6 +235,7 @@
 
     function sendW() {
       var w = document.getElementById('w').value** 2 / 255;
+      document.getElementById('label_w').innerHTML = w;
       var w16 = 0 << 8 | w;
       var wstr = 'W' + w16.toString(16);  // base 16 color var.
       console.log('white: ' + wstr);
@@ -221,9 +251,10 @@
       //document.getElementById('devices').innerHTML = numDevices;
     };
     
-    function changeMode() {
-      mode++;
-      mode = mode%3;
+    function setMode(modeNum) {
+      //mode++;
+      //mode = mode%3;
+      mode = modeNum;
       
       if (mode == 0) {
         document.getElementById('s').className = 'slider enabled';
@@ -231,13 +262,20 @@
         document.getElementById('c').className = 'slider enabled';
         document.getElementById('w').className = 'slider enabled';
         document.getElementById('b').className = 'slider disabled';
+        document.getElementById('hc').className = 'slider enabled';
         document.getElementById('s').disabled = false;
         document.getElementById('d').disabled = false;
         document.getElementById('c').disabled = false;
         document.getElementById('w').disabled = false;
         document.getElementById('b').disabled = true;
+        document.getElementById('hc').disabled = true;
 
-        document.getElementById('mode-display').innerHTML = '(SDC)';
+        document.getElementById('mode0').disabled = true;
+        document.getElementById('mode1').disabled = false;
+        document.getElementById('mode2').disabled = false;
+
+
+        //document.getElementById('mode-display').innerHTML = '(SDC)';
         if (sendWS) connection.send('SDC');
       } 
       else if (mode == 1) {
@@ -246,31 +284,46 @@
         document.getElementById('c').className = 'slider enabled';
         document.getElementById('w').className = 'slider enabled';
         document.getElementById('b').className = 'slider enabled';
+        document.getElementById('hc').className = 'slider enabled';
         document.getElementById('s').disabled = true;
         document.getElementById('d').disabled = true;
         document.getElementById('c').disabled = false;
         document.getElementById('w').disabled = false;
         document.getElementById('b').disabled = false;
+        document.getElementById('hc').disabled = true;
 
-        document.getElementById('mode-display').innerHTML = '(MANUAL)';
+        document.getElementById('mode1').disabled = true;
+        document.getElementById('mode0').disabled = false;
+        document.getElementById('mode2').disabled = false;
+
+        //document.getElementById('mode-display').innerHTML = '(MANUAL)';
         if (sendWS) connection.send('MANUAL');   
       } 
-      else {
+      else if (mode == 2) {
         document.getElementById('s').className = 'slider disabled';
         document.getElementById('d').className = 'slider disabled';
         document.getElementById('c').className = 'slider disabled';
         document.getElementById('w').className = 'slider disabled';
         document.getElementById('b').className = 'slider disabled';
+        document.getElementById('hc').className = 'slider disabled';
         document.getElementById('s').disabled = true;
         document.getElementById('d').disabled = true;
         document.getElementById('c').disabled = true;
         document.getElementById('w').disabled = true;
         document.getElementById('b').disabled = true;
+        document.getElementById('hc').disabled = true;
 
-        document.getElementById('mode-display').innerHTML = '(BLACKOUT)';
+        document.getElementById('mode2').disabled = true;
+        document.getElementById('mode0').disabled = false;
+        document.getElementById('mode1').disabled = false;
+
+        //document.getElementById('mode-display').innerHTML = '(BLACKOUT)';
         if (sendWS) connection.send('AUTO');
       }
-      console.log('mode = ' + mode)
+      else {
+        console.log('BAD MODE: ' + mode);
+      }
+      console.log('mode = ' + mode);
     };
 
     // restyle color picker:
