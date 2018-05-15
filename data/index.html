@@ -10,7 +10,7 @@
     color: #020202;
   }
   .container {
-    width: 80%;
+    width: 85%;
     margin: 0 auto;
   }
   h3 {
@@ -84,35 +84,31 @@
     border: 2px solid #0033cc;
     color: #0033cc;
   }
-
-  /* color picker css: */
-  input[type="color"] {
-  /*.color-pick {*/
-    -webkit-appearance: none;
+  select {
+    width: 30%;
+    height: 30px;
+    font-size: 12px;
     border: none;
-    width: 50px;
-    height: 50px;
-    cursor: pointer;
-    display: block;
-    margin:10px 0px;
+    margin: 1%;
   }
-  input[type="color"]::-webkit-color-swatch-wrapper {
-  /*.color-pick {*/
-    padding: 0;
-  }
-  input[type="color"]::-webkit-color-swatch {
-  /*.color-pick {*/
-    border: none;
-  }
+/*  button.preset {
+    width:22%;
+  }*/
 </style>
-
-
 </head>
+
+
+
 <body>
     <div class = "container">
       <header>
         <h1>Pixel Controller</h1>
       </header>
+
+      <h3>PRESETS:</h3>
+      <button id="preset0" class="preset" style="background-color:#EEE" onclick="setPreset(0);">Preset 1</button>
+      <button id="preset1" class="preset" style="background-color:#EEE" onclick="setPreset(1);">Preset 2</button>
+      <button id="preset2" class="preset" style="background-color:#EEE" onclick="setPreset(2);">Preset 3</button>
 
       <h3>ANIMATION SPEED: <span class="label" id="label_s"></span></h3>
       <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="127">
@@ -133,8 +129,16 @@
       <h3>WHITE: <span class="label" id="label_w"></span></h3>
       <input class="enabled slider" id="w" type="range" min="0" max="255" step="1" oninput="sendW();" value="0">
       
+      <h3>SAVE PRESET:</h3>
+      <select id="presets">
+        <option value=1>1</option>
+        <option value=2>2</option>
+        <option value=3>3</option>
+      </select>
+      <button id="preset-save" class="preset" style="background-color:#EEE" onclick="savePreset();">SAVE</button>
       <h3>NUM DEVICES:</h3>
       <input class="fields" id="numDev" type="number" name="num" min="1" max="40" placeholder="number" oninput="submitDevices();">
+      
       <!--<input class="enabled slider" id="numDev" type="range" min="0" max="50" step="1" oninput="submitDevices();" value="1">
       <p id="devices">--</p>-->
       <!--<button onclick="submitDevices()">SUBMIT</button>-->
@@ -151,10 +155,16 @@
       var connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
       //var connection = new WebSocket('ws://127.0.0.1:8080/');
       connection.onopen = function () {
+        // init: (change these to GET from ws)
+        setMode(0);
+        sendSDC();
+        sendBrightness();
+        sendCycleSpeed();
+        sendW();
         connection.send('Connect ' + new Date());
         // send mode: 
-        document.getElementById('mode-display').innerHTML = '(SDC)';
-        connection.send('SDC');
+        //document.getElementById('mode-display').innerHTML = '(SDC)';
+        //connection.send('SDC');
       };
       connection.onerror = function (error) {
         console.log('WebSocket Error ', error);
@@ -166,12 +176,6 @@
         console.log('WebSocket connection closed');
       };
     }
-    // init: (change these to GET from ws)
-    setMode(0);
-    sendSDC();
-    sendBrightness();
-    sendCycleSpeed();
-    sendW();
 
     
     // send speed, delay, color
@@ -250,10 +254,20 @@
       if (sendWS) connection.send(nstr);
       //document.getElementById('devices').innerHTML = numDevices;
     };
+
+    function savePreset() {
+      var presetNum = document.getElementById('presets').value;
+
+      var txt = 'Save current values as a new preset at position ' + presetNum + '?';
+      if (confirm(txt)) {
+          console.log('saved as preset #' + presetNum);
+      } else {
+          console.log('save cancelled');
+      }
+
+    }
     
     function setMode(modeNum) {
-      //mode++;
-      //mode = mode%3;
       mode = modeNum;
       
       if (mode == 0) {
