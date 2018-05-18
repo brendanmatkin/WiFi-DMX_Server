@@ -65,6 +65,18 @@ enum Mode {
   SDC,
   MANUAL,
   AUTO
-}mode = SDC;
+} mode = SDC;
+
+struct State {
+    uint8_t speed       = 127;
+    uint8_t delay       = 0;
+    uint8_t hue         = 160;
+    uint8_t mode        = 0;
+    uint8_t hue_cycle   = 0;
+    uint8_t brightness  = 255;
+    uint8_t white       = 0;
+    uint8_t preset      = 0;
+    uint8_t num_devices = 8;
+} state;
 
 #endif /* SETTINGS_H */
