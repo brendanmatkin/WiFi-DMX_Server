@@ -183,6 +183,7 @@
         console.log('WebSocket Error ', error);
       };
       connection.onmessage = function (e) {
+        getStates(e.data);
         console.log('Server: ', e.data);
       };
       connection.onclose = function () {
@@ -192,23 +193,25 @@
 
     function initializeStates() {
       // init: (change these to GET from ws)
-      setMode(state.mode);
-      sendSDC();
-      sendBrightness();
-      sendCycleSpeed();
-      sendW();
+      // setMode(state.mode);
+      // sendSDC();
+      // sendBrightness();
+      // sendCycleSpeed();
+      // sendW();
     }
 
-    function valuesFromServer(e) {
+    function getStates(rawJSON) {
+      //let newStates = JSON.parse(rawJSON);
 
     }
 
     // send speed, delay, color
     function sendSDC() {
       //let s = document.getElementById('s').value;
-      state.speed = document.getElementById('s').value;
-      state.delay = document.getElementById('d').value;
-      state.hue = document.getElementById('h').value;
+      //state.speed = +document.getElementById('s').value;          // coerce into a number by mathing it! 
+      state.speed = parseInt(document.getElementById('s').value);   // but better semantics to parseInt(val, base) (assumes base 10)
+      state.delay = parseInt(document.getElementById('d').value);
+      state.hue   = parseInt(document.getElementById('h').value);
       // set these lets with value from esp instead! 
       let __h = state.hue/255.0*360.0;
       document.getElementById('h').style.backgroundColor = `hsl(${__h}, 100%, 50%)`;
@@ -219,11 +222,13 @@
       let sdcstr = '&' + sdc.toString(16);
       console.log('SDC: ' + sdcstr);
       if (sendWS) connection.send(sdcstr);
+      var testJSON = JSON.stringify(state);
+      console.log(testJSON);
     };
 
     // send brightness:
     function sendBrightness() {
-      state.brightness = document.getElementById('b').value;
+      state.brightness = parseInt(document.getElementById('b').value);
       document.getElementById('label_b').innerHTML = state.brightness;
       let b16 = 0<<8 | state.brightness;
       let bstr = 'B' + b16.toString(16);
@@ -233,7 +238,7 @@
 
     // send hue cycle speed:
     function sendCycleSpeed() {
-      state.hue_cycle = document.getElementById('hc').value;  // c = cycle, hc = hue cycle (already used id=c)
+      state.hue_cycle = parseInt(document.getElementById('hc').value);  // c = cycle, hc = hue cycle (already used id=c)
       document.getElementById('label_hc').innerHTML = state.hue_cycle;
       let c16 = 0<<8 | state.hue_cycle;
       let cstr = 'C' + c16.toString(16);
@@ -256,7 +261,7 @@
     // };
 
     function sendW() {
-      state.white = document.getElementById('w').value** 2 / 255;
+      state.white = Math.floor(parseInt(document.getElementById('w').value)** 2 / 255);
       document.getElementById('label_w').innerHTML = state.white;
       let w16 = 0 << 8 | state.white;
       let wstr = 'W' + w16.toString(16);  // base 16 color let.
@@ -265,7 +270,7 @@
     };
 
     function submitDevices() {
-      state.num_devices = document.getElementById('numDev').value;
+      state.num_devices = parseInt(document.getElementById('numDev').value);
       let n16 = 0<<8 | state.num_devices;
       let nstr = 'N' + n16.toString(16);
       console.log('NumDevices: ' + nstr);
@@ -302,7 +307,7 @@
     }
 
     function savePreset() {
-      state.preset = document.getElementById('presets').value;
+      state.preset = parseInt(document.getElementById('presets').value);
 
       let txt = 'Save current values as a new preset at position ' + state.preset + '?';
       if (confirm(txt)) {
