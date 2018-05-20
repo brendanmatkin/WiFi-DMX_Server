@@ -71,12 +71,15 @@ struct State {
     uint8_t speed       = 127;
     uint8_t delay       = 0;
     uint8_t hue         = 160;
-    uint8_t mode        = 0;
+    Mode    mode        = SDC;
     uint8_t hue_cycle   = 0;
     uint8_t brightness  = 255;
     uint8_t white       = 0;
     uint8_t preset      = 0;
     uint8_t num_devices = 8;
 } state;
+
+#define NUM_PRESETS 3
+struct State presets[NUM_PRESETS];
 
 #endif /* SETTINGS_H */

@@ -64,6 +64,12 @@ void setup() {
   Serial.printf("(c)2018 Brendan Matkin\n\n");    // pick open source license
   Serial.flush();
 
+  /* init preset states */
+  for (int i = 0; i < NUM_PRESETS; i++) {
+    presets[i] = state;                     // copy default state into presets for now (store in EEPROM or SPIFFS later)
+    presets[i].preset = i+1;
+  }
+
   /* init LED PIN */
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);           // low is on
