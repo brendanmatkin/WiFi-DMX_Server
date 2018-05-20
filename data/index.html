@@ -117,11 +117,11 @@
         <button id="preset3" class="preset" style="background-color:#EEE" onclick="setPreset(3);">Preset 3</button>
 
       <h3>ANIMATION SPEED: <span class="label" id="label_s"></span></h3>
-        <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="127">
+        <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="updateValues();" value="127">
       <h3>DELAY: <span class="label" id="label_d"></span></h3>
-        <input class="enabled slider" id="d" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="0">
+        <input class="enabled slider" id="d" type="range" min="0" max="255" step="1" oninput="updateValues();" value="0">
       <h3>COLOR: <span class="label" id="label_h"></span></h3>
-        <input class="enabled slider" id="h" type="range" min="0" max="255" step="1" oninput="sendSDC();" value="160">
+        <input class="enabled slider" id="h" type="range" min="0" max="255" step="1" oninput="updateValues();" value="160">
       
       <h3>CHANGE MODE:</h3>
         <button id="mode0" class="button" style="background-color:#EEE" onclick="setMode(0);">LFO</button>
@@ -129,11 +129,11 @@
         <button id="mode2" class="button" style="background-color:#EEE" onclick="setMode(2);">BLACKOUT</button>
 
       <h3>HUE CYCLE SPEED: <span class="label" id="label_hc"></span></h3>
-        <input class="enabled slider" id="hc" type="range" min="0" max="255" step="1" oninput="sendCycleSpeed();" value="0">
+        <input class="enabled slider" id="hc" type="range" min="0" max="255" step="1" oninput="updateValues();" value="0">
       <h3>BRIGHTNESS: <span class="label" id="label_b"></span></h3>
-        <input class="enabled slider" id="b" type="range" min="0" max="255" step="1" oninput="sendBrightness();" value="255">
+        <input class="enabled slider" id="b" type="range" min="0" max="255" step="1" oninput="updateValues();" value="255">
       <h3>WHITE: <span class="label" id="label_w"></span></h3>
-        <input class="enabled slider" id="w" type="range" min="0" max="255" step="1" oninput="sendW();" value="0">
+        <input class="enabled slider" id="w" type="range" min="0" max="255" step="1" oninput="updateValues();" value="0">
       
       <h3>SAVE AS PRESET:</h3>
         <select id="presets">
@@ -143,7 +143,7 @@
         </select>
         <button id="preset-save" class="preset" style="background-color:#EEE" onclick="savePreset();">SAVE</button>
       <h3>NUM DEVICES:</h3>
-        <input class="fields" id="numDev" type="number" name="num" min="1" max="40" placeholder="number" oninput="submitDevices();">
+        <input class="fields" id="numDev" type="number" name="num" min="1" max="40" placeholder="number" oninput="updateValues();">
     
     </div>
 
@@ -170,10 +170,10 @@
     let connection; 
 
     if (sendWS) {
-      //let connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
+      //connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
       connection = new WebSocket('ws://127.0.0.1:8080/');
       connection.onopen = function () {
-        initializeStates();
+        //initializeStates();
         connection.send('Connect ' + new Date());
         // send mode: 
         //document.getElementById('mode-display').innerHTML = '(SDC)';
@@ -183,107 +183,60 @@
         console.log('WebSocket Error ', error);
       };
       connection.onmessage = function (e) {
-        getStates(e.data);
-        console.log('Server: ', e.data);
+        getStateFromWS(e.data);
+        //console.log('Server: ', e.data);
       };
       connection.onclose = function () {
         console.log('WebSocket connection closed');
       };
     }
 
-    function initializeStates() {
-      // init: (change these to GET from ws)
-      // setMode(state.mode);
-      // sendSDC();
-      // sendBrightness();
-      // sendCycleSpeed();
-      // sendW();
+    function sendStateToWS() {
+      let stateJSON = JSON.stringify(state);
+      console.log(stateJSON);
+      if (sendWS) connection.send(stateJSON);
     }
 
-    function getStates(rawJSON) {
+    function getStateFromWS(rawJSON) {
+      console.log('Server: ' + rawJSON);
+      state = JSON.parse(rawJSON);
+      updateValues(false);
+      setPreset(state.preset);
+      setMode(state.mode);
+      console.log('Updated state object. ' + state.speed);
       //let newStates = JSON.parse(rawJSON);
-
     }
 
-    // send speed, delay, color
-    function sendSDC() {
-      //let s = document.getElementById('s').value;
-      //state.speed = +document.getElementById('s').value;          // coerce into a number by mathing it! 
-      state.speed = parseInt(document.getElementById('s').value);   // but better semantics to parseInt(val, base) (assumes base 10)
-      state.delay = parseInt(document.getElementById('d').value);
-      state.hue   = parseInt(document.getElementById('h').value);
-      // set these lets with value from esp instead! 
+    // all at once vs in batches - it's a few ms slower but much more convenient. 
+    function updateValues(getValuesFromDOM = true) {
+      if (getValuesFromDOM) {
+        state.speed = parseInt(document.getElementById('s').value);
+        state.delay = parseInt(document.getElementById('d').value);
+        state.hue   = parseInt(document.getElementById('h').value);
+        state.brightness = parseInt(document.getElementById('b').value);
+        state.hue_cycle = parseInt(document.getElementById('hc').value);
+        state.white = Math.floor(parseInt(document.getElementById('w').value)** 2 / 255);
+        state.num_devices = parseInt(document.getElementById('numDev').value);
+
+        if (sendWS) sendStateToWS();
+      }
+
       let __h = state.hue/255.0*360.0;
       document.getElementById('h').style.backgroundColor = `hsl(${__h}, 100%, 50%)`;
       document.getElementById('label_s').innerHTML = state.speed;
       document.getElementById('label_d').innerHTML = state.delay;
       document.getElementById('label_h').innerHTML = state.hue;
-      let sdc = state.speed<<16 | state.delay<<8 | state.hue;
-      let sdcstr = '&' + sdc.toString(16);
-      console.log('SDC: ' + sdcstr);
-      if (sendWS) connection.send(sdcstr);
-      var testJSON = JSON.stringify(state);
-      console.log(testJSON);
-    };
-
-    // send brightness:
-    function sendBrightness() {
-      state.brightness = parseInt(document.getElementById('b').value);
       document.getElementById('label_b').innerHTML = state.brightness;
-      let b16 = 0<<8 | state.brightness;
-      let bstr = 'B' + b16.toString(16);
-      console.log('Brightness: ' + bstr);
-      if (sendWS) connection.send(bstr);
-    }
-
-    // send hue cycle speed:
-    function sendCycleSpeed() {
-      state.hue_cycle = parseInt(document.getElementById('hc').value);  // c = cycle, hc = hue cycle (already used id=c)
       document.getElementById('label_hc').innerHTML = state.hue_cycle;
-      let c16 = 0<<8 | state.hue_cycle;
-      let cstr = 'C' + c16.toString(16);
-      console.log('Hue Cycle Speed: ' + cstr);
-      if (sendWS) connection.send(cstr);
-    }
-
-    // function sendRGB () {
-    //   // let r = document.getElementById('r').value** 2 / 255;
-    //   // let g = document.getElementById('g').value** 2 / 255;
-    //   // let b = document.getElementById('b').value** 2 / 255;
-    
-    //   //let rgb = r << 24 | g << 16 | b << 8 | w;
-    //   //let rgbstr = '#' + rgb.toString(16);
-    //   //console.log('RGB: ' + rgbstr);
-    //   //connection.send(rgbstr);
-    //   let col = document.getElementById('col').value;   // using color picker instead
-    //   console.log('RGB: ' + col);
-    //   if (sendWS) connection.send(col);
-    // };
-
-    function sendW() {
-      state.white = Math.floor(parseInt(document.getElementById('w').value)** 2 / 255);
       document.getElementById('label_w').innerHTML = state.white;
-      let w16 = 0 << 8 | state.white;
-      let wstr = 'W' + w16.toString(16);  // base 16 color let.
-      console.log('white: ' + wstr);
-      if (sendWS) connection.send(wstr);
-    };
-
-    function submitDevices() {
-      state.num_devices = parseInt(document.getElementById('numDev').value);
-      let n16 = 0<<8 | state.num_devices;
-      let nstr = 'N' + n16.toString(16);
-      console.log('NumDevices: ' + nstr);
-      if (sendWS) connection.send(nstr);
-      //document.getElementById('devices').innerHTML = numDevices;
-    };
+    }
 
     function setPreset(presetNum) {
       // copy preset object from array into state object - how in js? 
       // preset 0 is NO PRESET
       // whenever any value is changed, set preset to 0?? 
       state.preset = presetNum;
-      console.log ('preset: ' + state.preset);
+      console.log ('loaded preset: ' + state.preset);
       if (state.preset == 1) {
         document.getElementById('preset1').disabled = true;
         document.getElementById('preset2').disabled = false;
@@ -312,16 +265,16 @@
       let txt = 'Save current values as a new preset at position ' + state.preset + '?';
       if (confirm(txt)) {
           console.log('saved as preset #' + state.preset);
-      } else {
+      } 
+      else {
           console.log('save cancelled');
       }
-
     }
     
     function setMode(modeNum) {
-      mode = modeNum;
+      state.mode = modeNum;
       
-      if (mode == 0) {
+      if (state.mode == 0) {
         document.getElementById('s').className = 'slider enabled';
         document.getElementById('d').className = 'slider enabled';
         document.getElementById('h').className = 'slider enabled';
@@ -341,9 +294,10 @@
 
 
         //document.getElementById('mode-display').innerHTML = '(SDC)';
-        if (sendWS) connection.send('SDC');
+        //if (sendWS) connection.send('SDC');
+        if (sendWS) connection.send(JSON.stringify(state));
       } 
-      else if (mode == 1) {
+      else if (state.mode == 1) {
         document.getElementById('s').className = 'slider disabled';
         document.getElementById('d').className = 'slider disabled';
         document.getElementById('h').className = 'slider enabled';
@@ -362,9 +316,10 @@
         document.getElementById('mode2').disabled = false;
 
         //document.getElementById('mode-display').innerHTML = '(MANUAL)';
-        if (sendWS) connection.send('MANUAL');   
+        //if (sendWS) connection.send('MANUAL');   
+        if (sendWS) connection.send(JSON.stringify(state));
       } 
-      else if (mode == 2) {
+      else if (state.mode == 2) {
         document.getElementById('s').className = 'slider disabled';
         document.getElementById('d').className = 'slider disabled';
         document.getElementById('h').className = 'slider disabled';
@@ -383,12 +338,12 @@
         document.getElementById('mode1').disabled = false;
 
         //document.getElementById('mode-display').innerHTML = '(BLACKOUT)';
-        if (sendWS) connection.send('AUTO');
+        if (sendWS) connection.send(JSON.stringify(state));
       }
       else {
-        console.log('BAD MODE: ' + mode);
+        console.log('BAD MODE: ' + state.mode);
       }
-      console.log('mode = ' + mode);
+      console.log('mode: ' + state.mode);
     };
 
     // restyle color picker:
