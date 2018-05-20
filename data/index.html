@@ -164,10 +164,18 @@
         num_devices: 8
     };
 
+    let presets = [
+        Object.assign({}, state),
+        Object.assign({}, state),
+        Object.assign({}, state)
+    ];
+
     //let mode = false;
     let mode = 0;   // 0 = LFO, 1 = MANUAL, 2 = BLACKOUT
     let sendWS = true;
     let connection; 
+
+
 
     if (sendWS) {
       //connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
@@ -183,13 +191,21 @@
         console.log('WebSocket Error ', error);
       };
       connection.onmessage = function (e) {
-        getStateFromWS(e.data);
+        // check if array or single object
+        if(Array.isArray(JSON.parse(e.data))) {
+          getPresetsFromWS(e.data);
+        }
+        else {
+          getStateFromWS(e.data);
+        }
         //console.log('Server: ', e.data);
       };
       connection.onclose = function () {
         console.log('WebSocket connection closed');
       };
     }
+
+
 
     function sendStateToWS() {
       let stateJSON = JSON.stringify(state);
@@ -198,16 +214,22 @@
     }
 
     function getStateFromWS(rawJSON) {
-      console.log('Server: ' + rawJSON);
+      console.log('Server State: ' + rawJSON);
       state = JSON.parse(rawJSON);
-      updateValues(false);
-      setPreset(state.preset);
-      setMode(state.mode);
+      //setMode(state.mode);          // this now happens in setPreset!
+      //updateValues(false);          // this also now happens in setPreset!
+      setPreset(state.preset, false);
       console.log('Updated state object. ' + state.speed);
       //let newStates = JSON.parse(rawJSON);
     }
 
-    // all at once vs in batches - it's a few ms slower but much more convenient. 
+    function getPresetsFromWS(rawJSON) {
+      console.log('Server Presets: ' + rawJSON);
+      presets = JSON.parse(rawJSON);
+      console.log('Update preset array. ' + presets[2].preset);
+    }
+
+    // all at once instead of in batches - it's a few ms slower but much more convenient. 
     function updateValues(getValuesFromDOM = true) {
       if (getValuesFromDOM) {
         state.speed = parseInt(document.getElementById('s').value);
@@ -218,7 +240,19 @@
         state.white = Math.floor(parseInt(document.getElementById('w').value)** 2 / 255);
         state.num_devices = parseInt(document.getElementById('numDev').value);
 
+        if (state.preset != 0) setPreset(0, false); // manual changes override preset! 
+
         if (sendWS) sendStateToWS();
+      }
+      else {
+        // push values to faders
+        document.getElementById('s').value = state.speed;
+        document.getElementById('d').value = state.delay;
+        document.getElementById('h').value = state.hue;
+        document.getElementById('b').value = state.brightness;
+        document.getElementById('hc').value = state.hue_cycle;
+        document.getElementById('w').value = state.white;
+        document.getElementById('numDev').value = state.num_devices;
       }
 
       let __h = state.hue/255.0*360.0;
@@ -231,23 +265,21 @@
       document.getElementById('label_w').innerHTML = state.white;
     }
 
-    function setPreset(presetNum) {
+    function setPreset(presetNum, sendState = true) {
       // copy preset object from array into state object - how in js? 
       // preset 0 is NO PRESET
       // whenever any value is changed, set preset to 0?? 
-      state.preset = presetNum;
-      console.log ('loaded preset: ' + state.preset);
-      if (state.preset == 1) {
+      if (presetNum == 1) {
         document.getElementById('preset1').disabled = true;
         document.getElementById('preset2').disabled = false;
         document.getElementById('preset3').disabled = false;
       }
-      else if (state.preset == 2) {
+      else if (presetNum == 2) {
         document.getElementById('preset1').disabled = false;
         document.getElementById('preset2').disabled = true;
         document.getElementById('preset3').disabled = false;
       }
-      else if (state.preset == 3) {
+      else if (presetNum == 3) {
         document.getElementById('preset1').disabled = false;
         document.getElementById('preset2').disabled = false;
         document.getElementById('preset3').disabled = true;
@@ -256,7 +288,15 @@
         document.getElementById('preset1').disabled = false;
         document.getElementById('preset2').disabled = false;
         document.getElementById('preset3').disabled = false;
+        return null;
       }
+      state = Object.assign({}, presets[presetNum-1]);
+      updateValues(false);
+      setMode(state.mode, false);
+      //state.preset = presetNum;
+      console.log ('loaded preset: ' + state.preset);
+
+      if (sendState) sendStateToWS();
     }
 
     function savePreset() {
@@ -264,17 +304,21 @@
 
       let txt = 'Save current values as a new preset at position ' + state.preset + '?';
       if (confirm(txt)) {
+          // update the new preset here! 
+          presets[state.preset-1] = Object.assign({}, state);
+
           console.log('saved as preset #' + state.preset);
+          setPreset(state.preset);    // then actually set it!
       } 
       else {
           console.log('save cancelled');
       }
     }
     
-    function setMode(modeNum) {
-      state.mode = modeNum;
+    function setMode(modeNum, cancelPreset = true) {
       
-      if (state.mode == 0) {
+      // SDC/LFO
+      if (modeNum == 0) {
         document.getElementById('s').className = 'slider enabled';
         document.getElementById('d').className = 'slider enabled';
         document.getElementById('h').className = 'slider enabled';
@@ -291,13 +335,9 @@
         document.getElementById('mode0').disabled = true;
         document.getElementById('mode1').disabled = false;
         document.getElementById('mode2').disabled = false;
-
-
-        //document.getElementById('mode-display').innerHTML = '(SDC)';
-        //if (sendWS) connection.send('SDC');
-        if (sendWS) connection.send(JSON.stringify(state));
-      } 
-      else if (state.mode == 1) {
+      }
+      // MANUAL
+      else if (modeNum == 1) {
         document.getElementById('s').className = 'slider disabled';
         document.getElementById('d').className = 'slider disabled';
         document.getElementById('h').className = 'slider enabled';
@@ -311,15 +351,12 @@
         document.getElementById('b').disabled = false;
         document.getElementById('hc').disabled = false;
 
-        document.getElementById('mode1').disabled = true;
         document.getElementById('mode0').disabled = false;
+        document.getElementById('mode1').disabled = true;
         document.getElementById('mode2').disabled = false;
-
-        //document.getElementById('mode-display').innerHTML = '(MANUAL)';
-        //if (sendWS) connection.send('MANUAL');   
-        if (sendWS) connection.send(JSON.stringify(state));
-      } 
-      else if (state.mode == 2) {
+      }
+      // BLACKOUT
+      else if (modeNum == 2) {
         document.getElementById('s').className = 'slider disabled';
         document.getElementById('d').className = 'slider disabled';
         document.getElementById('h').className = 'slider disabled';
@@ -333,16 +370,18 @@
         document.getElementById('b').disabled = true;
         document.getElementById('hc').disabled = true;
 
-        document.getElementById('mode2').disabled = true;
         document.getElementById('mode0').disabled = false;
         document.getElementById('mode1').disabled = false;
-
-        //document.getElementById('mode-display').innerHTML = '(BLACKOUT)';
-        if (sendWS) connection.send(JSON.stringify(state));
+        document.getElementById('mode2').disabled = true;
       }
       else {
-        console.log('BAD MODE: ' + state.mode);
+        console.log('BAD MODE: ' + modeNum + '. Leaving unchanged (' + state.mode + ')');
+        state.mode = 0;     // default animated on error
+        return null;
       }
+      state.mode = modeNum;
+      if (state.preset != 0 && cancelPreset) setPreset(0, false); // manual changes override preset! 
+      if (sendWS) connection.send(JSON.stringify(state));
       console.log('mode: ' + state.mode);
     };
 
