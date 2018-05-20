@@ -9,6 +9,147 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 extern const bool SERIAL_DEBUG;
 extern void setZygoteDMX( uint8_t f, uint8_t r, uint8_t g, uint8_t b, uint8_t w );
 
+/*
+JSON object:
+  let state = {
+    speed: 127,
+    delay: 0,
+    hue: 160,
+    mode: 0,
+    hue_cycle: 0,
+    brightness: 255,
+    white: 0,
+    preset: 0,
+    num_devices: 8
+  };
+
+local struct: 
+  struct State = {
+    uint8_t speed       = 127;
+    uint8_t delay       = 0;
+    uint8_t hue         = 160;
+    uint8_t mode        = 0;
+    uint8_t hue_cycle   = 0;
+    uint8_t brightness  = 255;
+    uint8_t white       = 0;
+    uint8_t preset      = 0;
+    uint8_t num_devices = 8;
+  } state;
+*/
+
+
+/*---------- JSON serialize/deserialize ----------*/
+const uint16_t jsonReceiveSize = 256;
+bool deserializeJSON(uint8_t * json) {
+  StaticJsonBuffer<jsonReceiveSize*3> jsonBuffer;     // actually only needs to be about 240 bytes, extra reserved for future use (or just because I have the space..). (http://arduinojson.org/assistant/)
+  JsonVariant variant = jsonBuffer.parse(json);
+  if (variant.is<JsonArray>()) {
+    JsonArray& array = variant;
+    if (!array.success()) {
+      if (SERIAL_DEBUG) Serial.printf("parseArray() failed\n");
+      return false;
+    }
+    else {
+      for (int i = 0; i < NUM_PRESETS; i++) {
+        StaticJsonBuffer<jsonReceiveSize> jsonBuffer2;
+        JsonObject& root = jsonBuffer2.createObject();
+        presets[i].speed = array[i]["speed"];
+        presets[i].delay = array[i]["delay"];
+        presets[i].hue   = array[i]["hue"];
+        uint8_t _mode = array[i]["mode"];
+        presets[i].mode = (Mode) _mode;
+        presets[i].hue_cycle = array[i]["hue_cycle"];
+        presets[i].brightness = array[i]["brightness"];
+        presets[i].white = array[i]["white"];
+        presets[i].preset = array[i]["preset"];
+        presets[i].num_devices = array[i]["num_devices"];
+        if (SERIAL_DEBUG) Serial.printf("%u\n", presets[i].preset);
+      }
+    }
+    return array.success();
+  }
+  else if (variant.is<JsonObject>()) {
+    JsonObject& root = variant;
+    if (!root.success()) {
+      if (SERIAL_DEBUG) Serial.printf("parseObject() failed\n");
+      return false;
+    }
+    else {
+      // SDC(/LFO):
+      state.speed = root["speed"];
+      state.delay = root["delay"];
+      state.hue   = root["hue"];
+      for (int i = 0; i < currentFixtures; i++) {
+        leds[i].h = state.hue;
+      }
+      // MODE: 
+      uint8_t _mode = root["mode"];
+      state.mode = (Mode) _mode;
+      // HUE CYCLE:
+      state.hue_cycle = root["hue_cycle"];
+      if (state.hue_cycle == 0) hueCycleSpeed = 0;
+      else hueCycleSpeed = map(state.hue_cycle, 0, 255, 175, 1);
+      // BRIGHTNESS, WHITE:
+      state.brightness = root["brightness"];
+      state.white = root["white"];
+      for (int i = 0; i < currentFixtures; i++) {
+        whiteLeds[i].r = root["white"];   // using red channel of fastLED for white control
+      }
+      // PRESET:
+      state.preset = root["preset"];
+      // NUMBER OF DEVICES:
+      state.num_devices = root["num_devices"];
+    }
+    return root.success();
+  }
+  else {
+    if (SERIAL_DEBUG) Serial.printf("variant not Object or Array\n");
+    return false;
+  }
+}
+
+const uint16_t jsonSendSize = 256;
+void serializeJSON_connected(char * json) {
+  // send state: 
+  StaticJsonBuffer<jsonSendSize> jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
+  root["speed"] = state.speed;
+  root["delay"] = state.delay;
+  root["hue"] = state.hue;
+  root["mode"] = state.mode;
+  root["hue_cycle"] = state.hue_cycle;
+  root["brightness"] = state.brightness;
+  root["white"] = state.white;
+  root["preset"] = state.preset;
+  root["num_devices"] = state.num_devices;
+  root.printTo(json, jsonSendSize);
+  //if (SERIAL_DEBUG) Serial.println(json);
+  if (SERIAL_DEBUG) root.prettyPrintTo(Serial);
+}
+
+void serializeJSON_presets(char * json) {
+  // send presets: 
+  StaticJsonBuffer<jsonSendSize*3> jsonBufferArray;
+  StaticJsonBuffer<jsonSendSize*3> jsonBufferTemp;
+  JsonArray& array = jsonBufferArray.createArray();
+  for (int i = 0; i < NUM_PRESETS; i++) {
+    JsonObject& root = jsonBufferTemp.createObject();
+    root["speed"] = presets[i].speed;
+    root["delay"] = presets[i].delay;
+    root["hue"] = presets[i].hue;
+    root["mode"] = presets[i].mode;
+    root["hue_cycle"] = presets[i].hue_cycle;
+    root["brightness"] = presets[i].brightness;
+    root["white"] = presets[i].white;
+    root["preset"] = presets[i].preset;
+    root["num_devices"] = presets[i].num_devices;
+    array.add(root);
+  }
+  array.printTo(json, jsonSendSize*3);
+  if (SERIAL_DEBUG) array.prettyPrintTo(Serial);
+}
+
+
 
 /*---------- Websocket Event ------------*/
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
@@ -20,77 +161,20 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       if (SERIAL_DEBUG) Serial.printf("[ws] [%u] Disconnected!\n", num);
       break;
     case WStype_CONNECTED: {
+        // num is client ID (because I am a websocket server!)
         IPAddress ip = webSocket.remoteIP(num);
-        if (SERIAL_DEBUG) Serial.printf("[ws] [%u] Connected from url: %u.%u.%u.%u; url: %s replying...\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-        String _init = 'I' + String(currentFixtures);
-        webSocket.sendTXT(num, _init);
+        if (SERIAL_DEBUG) Serial.printf("[ws] [%u] Connected from url: %u.%u.%u.%u%s replying...\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+        char presetJSON[jsonSendSize*3];
+        serializeJSON_presets(presetJSON);
+        webSocket.sendTXT(num, presetJSON);
+        char connJSON[jsonSendSize];
+        serializeJSON_connected(connJSON);
+        webSocket.sendTXT(num, connJSON);    // send to same client (num) that connected to me!
       }
       break;
     case WStype_TEXT: {
         if (SERIAL_DEBUG) Serial.printf("[ws] [%u] got text: %s\n", num, payload);
-        if (payload[0] == '#') {                    // get RGB data
-          uint32_t rgb = (uint32_t) strtol((const char *) &payload[1], NULL, 16);   // decode rgb data
-          int r = ((rgb >> 16) & 0xFF);
-          int g = ((rgb >> 8)  & 0xFF);
-          int b =          rgb & 0xFF;
-          //leds[0].setRGB(r, g, b);
-          for (int i = 0; i < currentFixtures; i++) {
-            leds[i] = rgb2hsv_approximate(CRGB(r, g, b));
-          }
-          if (SERIAL_DEBUG) Serial.printf("[ws] R: %u, G: %u, B: %u\n", r, g, b);
-        } 
-        else if (payload[0] == '&') {             // get SDC data
-          uint32_t sdc = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
-          int s = (sdc >> 16) & 0xFF;               // speed
-          int d = (sdc >> 8)  & 0xFF;               // delay
-          int c =         sdc & 0xFF;               // color/hue
-          sdc_speed = (256 - s)/5.0f;
-          sdc_delay = d;
-          //leds[0].setHue(c);
-          for (int i = 0; i < currentFixtures; i++) {
-            leds[i].h=c;
-          }
-          if (SERIAL_DEBUG) Serial.printf("[ws] S: %u, D: %u, C: %u, spd:%.2f\n", s, d, c, sdc_speed);
-        } 
-        else if (payload[0] == 'N') {             // number of devices
-          uint32_t _num = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
-          currentFixtures = _num & 0xFF;
-          if (SERIAL_DEBUG) Serial.printf("[ws] currentFixtures: %u\n", currentFixtures);
-        } 
-        else if (payload[0] == 'W') {
-          uint32_t _raw = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
-          int w = _raw & 0xFF;
-          for (int i = 0; i < currentFixtures; i++) {
-            whiteLeds[i].r = w;
-          }
-          if (SERIAL_DEBUG) Serial.printf("[ws] White: %u\n", w);
-        }
-        else if (payload[0] == 'M') {
-          mode = MANUAL;
-          if (SERIAL_DEBUG) Serial.printf("[ws] Mode: %d\n", mode);
-        }
-        else if (payload[0] == 'S') {
-          mode = SDC;
-          if (SERIAL_DEBUG) Serial.printf("[ws] Mode: %d\n", mode);
-        }
-        else if (payload[0] == 'A') {
-          mode = AUTO;
-          if (SERIAL_DEBUG) Serial.printf("[ws] Mode: %d\n", mode);
-        }
-        else if (payload[0] == 'B') {
-          uint32_t _raw = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
-          int b = _raw & 0xFF;
-          brightness = b;
-          if (SERIAL_DEBUG) Serial.printf("[ws] Brightness: %u\n", b);
-        }
-        else if (payload[0] == 'C') {
-          uint32_t _raw = (uint32_t) strtol((const char *) &payload[1], NULL, 16);
-          int c = _raw & 0xFF;
-          //hueCycleSpeed = c/100.0f;
-          if (c == 0) hueCycleSpeed = 0;
-          else hueCycleSpeed = map(c, 0, 255, 175, 1);
-          if (SERIAL_DEBUG) Serial.printf("[ws] Hue Cycle Spped: %u\n", hueCycleSpeed);
-        }
+        deserializeJSON(payload);
       }
       break;
     case WStype_BIN:
@@ -101,5 +185,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
   }
 }
+
+
+
+
 
 #endif /* COMM_WS_H */
