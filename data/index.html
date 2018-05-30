@@ -8,6 +8,13 @@
     background-color: #FFFFFF;
     font-family: Arial, Helvetica, Sans-Serif;
     color: #020202;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    -khtml-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+    
   }
   .container {
     width: 85%;
@@ -111,10 +118,11 @@
         <h1>Pixel Controller</h1>
       </header>
 
-      <h3>PRESETS:</h3>
-        <button id="preset1" class="preset" style="background-color:#EEE" onclick="setPreset(1);">Preset 1</button>
-        <button id="preset2" class="preset" style="background-color:#EEE" onclick="setPreset(2);">Preset 2</button>
-        <button id="preset3" class="preset" style="background-color:#EEE" onclick="setPreset(3);">Preset 3</button>
+      <h3>PRESETS: <span class="label">(HOLD TO SAVE)</span></h3>
+      <!-- NOTE: change this callbacks to event listeners?? --> 
+        <button id="preset1" class="preset" style="background-color:#EEE" onmousedown="checkPreset(1, event);" ontouchstart="checkPreset(1, event);" onmouseup="setPreset(1)" ontouchend="setPreset(1)">Preset 1</button>
+        <button id="preset2" class="preset" style="background-color:#EEE" onmousedown="checkPreset(2, event);" ontouchstart="checkPreset(2, event);" onmouseup="setPreset(2)" ontouchend="setPreset(2)">Preset 2</button>
+        <button id="preset3" class="preset" style="background-color:#EEE" onmousedown="checkPreset(3, event);" ontouchstart="checkPreset(3, event);" onmouseup="setPreset(3)" ontouchend="setPreset(3)">Preset 3</button>
 
       <h3>ANIMATION SPEED: <span class="label" id="label_s"></span></h3>
         <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="updateValues();" value="127">
@@ -135,13 +143,15 @@
       <h3>WHITE: <span class="label" id="label_w"></span></h3>
         <input class="enabled slider" id="w" type="range" min="0" max="255" step="1" oninput="updateValues();" value="0">
       
+      <!-- 
       <h3>SAVE AS PRESET:</h3>
         <select id="presets">
           <option value=1>1</option>
           <option value=2>2</option>
           <option value=3>3</option>
         </select>
-        <button id="preset-save" class="preset" style="background-color:#EEE" onclick="savePreset();">SAVE</button>
+        <button id="preset-save" class="preset" style="background-color:#EEE" onclick="savePreset();">SAVE</button> 
+      -->
       <h3>NUMBER OF FIXTURES:</h3>
         <input class="fields" id="numDev" type="number" name="num" min="1" max="40" placeholder="number" oninput="updateValues();">
     
@@ -170,11 +180,14 @@
         Object.assign({}, state)
     ];
 
+    // preset save timer stuff:
+    let timer_id = 0,
+        hold_time = 1000;
+
     //let mode = false;
     let mode = 0;   // 0 = LFO, 1 = MANUAL, 2 = BLACKOUT
     let sendWS = true;
     let connection; 
-
 
 
     if (sendWS) {
@@ -265,8 +278,18 @@
       document.getElementById('label_w').innerHTML = state.white;
     }
 
+
+    function checkPreset(presetNum, event) {
+      // if (event.type === "click" && event.button !== 0) {
+      //   return;
+      // }
+      timer_id = setTimeout(function() { 
+        savePreset(presetNum) 
+      }, hold_time);
+    }
+
     function setPreset(presetNum, sendState = true) {
-      // copy preset object from array into state object - how in js? 
+      clearTimeout(timer_id);
       // preset 0 is NO PRESET
       // whenever any value is changed, set preset to 0?? 
       if (presetNum == 1) {
@@ -299,10 +322,11 @@
       //if (sendState) sendStateToWS();     // this happens in setMode!
     }
 
-    function savePreset() {
-      state.preset = parseInt(document.getElementById('presets').value);
+    function savePreset(presetNum) {
+      //state.preset = parseInt(document.getElementById('presets').value);
+      state.preset = presetNum;
 
-      let txt = 'Save current values as a new preset at position ' + state.preset + '?';
+      let txt = 'Save current values as PRESET ' + state.preset + ' ?';
       if (confirm(txt)) {
           presets[state.preset-1] = Object.assign({}, state);   // update the new preset here! 
           console.log('saved as preset #' + state.preset);
@@ -315,7 +339,6 @@
     }
     
     function setMode(modeNum, cancelPreset = true) {
-      
       // SDC/LFO
       if (modeNum == 0) {
         document.getElementById('s').className = 'slider enabled';
@@ -383,6 +406,16 @@
       if (sendWS) connection.send(JSON.stringify(state));
       console.log('mode: ' + state.mode);
     };
+
+    //disable right click for preset buttons (needed for mobile browser)
+    let nodes = document.getElementsByClassName("preset");
+    for (let node of nodes) {
+      node.addEventListener("contextmenu", function (event) {
+        event.preventDefault();
+        //event.stopPropagation();
+        //return false;
+      });
+    }
 
     // restyle color picker:
     // let color_picker = document.getElementById("col");

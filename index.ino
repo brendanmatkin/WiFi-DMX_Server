@@ -1,3 +1,5 @@
+// TODO: either use minified or store html, css, & js in file system. 
+
 static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -112,10 +114,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         <h1>Pixel Controller</h1>
       </header>
 
-      <h3>PRESETS:</h3>
-        <button id="preset1" class="preset" style="background-color:#EEE" onclick="setPreset(1);">Preset 1</button>
-        <button id="preset2" class="preset" style="background-color:#EEE" onclick="setPreset(2);">Preset 2</button>
-        <button id="preset3" class="preset" style="background-color:#EEE" onclick="setPreset(3);">Preset 3</button>
+      <h3>PRESETS (HOLD TO SAVE):</h3>
+        <button id="preset1" class="preset" style="background-color:#EEE" onmousedown="checkPreset(1);" onmouseup="setPreset(1)">Preset 1</button>
+        <button id="preset2" class="preset" style="background-color:#EEE" onmousedown="checkPreset(2);" onmouseup="setPreset(2)">Preset 2</button>
+        <button id="preset3" class="preset" style="background-color:#EEE" onmousedown="checkPreset(3);" onmouseup="setPreset(3)">Preset 3</button>
 
       <h3>ANIMATION SPEED: <span class="label" id="label_s"></span></h3>
         <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="updateValues();" value="127">
@@ -136,13 +138,15 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       <h3>WHITE: <span class="label" id="label_w"></span></h3>
         <input class="enabled slider" id="w" type="range" min="0" max="255" step="1" oninput="updateValues();" value="0">
       
+      <!-- 
       <h3>SAVE AS PRESET:</h3>
         <select id="presets">
           <option value=1>1</option>
           <option value=2>2</option>
           <option value=3>3</option>
         </select>
-        <button id="preset-save" class="preset" style="background-color:#EEE" onclick="savePreset();">SAVE</button>
+        <button id="preset-save" class="preset" style="background-color:#EEE" onclick="savePreset();">SAVE</button> 
+      -->
       <h3>NUMBER OF FIXTURES:</h3>
         <input class="fields" id="numDev" type="number" name="num" min="1" max="40" placeholder="number" oninput="updateValues();">
     
@@ -171,6 +175,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         Object.assign({}, state)
     ];
 
+    // preset save timer stuff:
+    let timer_id = 0,
+        hold_time = 1000;
+
     //let mode = false;
     let mode = 0;   // 0 = LFO, 1 = MANUAL, 2 = BLACKOUT
     let sendWS = true;
@@ -179,8 +187,8 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 
 
     if (sendWS) {
-      connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
-      //connection = new WebSocket('ws://127.0.0.1:8080/');
+      //connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
+      connection = new WebSocket('ws://127.0.0.1:8080/');
       connection.onopen = function () {
         //initializeStates();
         connection.send('Connect ' + new Date());
@@ -266,8 +274,15 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       document.getElementById('label_w').innerHTML = state.white;
     }
 
+
+    function checkPreset(presetNum) {
+      timer_id = setTimeout(function() { 
+        savePreset(presetNum) 
+      }, hold_time);
+    }
+
     function setPreset(presetNum, sendState = true) {
-      // copy preset object from array into state object - how in js? 
+      clearTimeout(timer_id);
       // preset 0 is NO PRESET
       // whenever any value is changed, set preset to 0?? 
       if (presetNum == 1) {
@@ -300,10 +315,11 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       //if (sendState) sendStateToWS();     // this happens in setMode!
     }
 
-    function savePreset() {
-      state.preset = parseInt(document.getElementById('presets').value);
+    function savePreset(presetNum) {
+      //state.preset = parseInt(document.getElementById('presets').value);
+      state.preset = presetNum;
 
-      let txt = 'Save current values as a new preset at position ' + state.preset + '?';
+      let txt = 'Save current values as PRESET ' + state.preset + ' ?';
       if (confirm(txt)) {
           presets[state.preset-1] = Object.assign({}, state);   // update the new preset here! 
           console.log('saved as preset #' + state.preset);
@@ -316,7 +332,6 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     }
     
     function setMode(modeNum, cancelPreset = true) {
-      
       // SDC/LFO
       if (modeNum == 0) {
         document.getElementById('s').className = 'slider enabled';
