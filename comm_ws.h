@@ -8,6 +8,8 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 
 extern const bool SERIAL_DEBUG;
 extern void setZygoteDMX( uint8_t f, uint8_t r, uint8_t g, uint8_t b, uint8_t w );
+extern bool savePresets();
+extern bool loadPresets();
 
 /*
 JSON object:
@@ -46,13 +48,14 @@ bool deserializeJSON(uint8_t * json) {
   if (variant.is<JsonArray>()) {
     JsonArray& array = variant;
     if (!array.success()) {
-      if (SERIAL_DEBUG) Serial.printf("parseArray() failed\n");
+      if (SERIAL_DEBUG) Serial.printf("[JSON] parseArray() failed\n");
       return false;
     }
     else {
+      if (SERIAL_DEBUG) Serial.printf("[JSON] JSON Array test values: ");
       for (int i = 0; i < NUM_PRESETS; i++) {
-        StaticJsonBuffer<jsonReceiveSize> jsonBuffer2;
-        JsonObject& root = jsonBuffer2.createObject();
+//        StaticJsonBuffer<jsonReceiveSize> jsonBuffer2;
+//        JsonObject& root = jsonBuffer2.createObject();
         presets[i].speed = array[i]["speed"];
         presets[i].delay = array[i]["delay"];
         presets[i].hue   = array[i]["hue"];
@@ -63,15 +66,21 @@ bool deserializeJSON(uint8_t * json) {
         presets[i].white = array[i]["white"];
         presets[i].preset = array[i]["preset"];
         presets[i].num_devices = array[i]["num_devices"];
-        if (SERIAL_DEBUG) Serial.printf("%u\n", presets[i].preset);
       }
+      if (SERIAL_DEBUG) Serial.println();
     }
-    return array.success();
+    if (array.success()) {      // this means we parsed a new preset array!
+      savePresetFlag = true;    // so save it!
+      return true;
+    }
+    else {
+      return false;
+    }
   }
   else if (variant.is<JsonObject>()) {
     JsonObject& root = variant;
     if (!root.success()) {
-      if (SERIAL_DEBUG) Serial.printf("parseObject() failed\n");
+      if (SERIAL_DEBUG) Serial.printf("[JSON] parseObject() failed\n");
       return false;
     }
     else {
@@ -103,7 +112,7 @@ bool deserializeJSON(uint8_t * json) {
     return root.success();
   }
   else {
-    if (SERIAL_DEBUG) Serial.printf("variant not Object or Array\n");
+    if (SERIAL_DEBUG) Serial.printf("[JSON] variant not Object or Array\n");
     return false;
   }
 }
@@ -129,11 +138,12 @@ void serializeJSON_connected(char * json) {
 
 void serializeJSON_presets(char * json) {
   // send presets: 
-  StaticJsonBuffer<jsonSendSize*3> jsonBufferArray;
-  StaticJsonBuffer<jsonSendSize*3> jsonBufferTemp;
-  JsonArray& array = jsonBufferArray.createArray();
+  //StaticJsonBuffer<jsonSendSize*3> jsonBufferArray;
+  DynamicJsonBuffer jsonBuffer;
+  JsonArray& array = jsonBuffer.createArray();
   for (int i = 0; i < NUM_PRESETS; i++) {
-    JsonObject& root = jsonBufferTemp.createObject();
+    //StaticJsonBuffer<jsonSendSize> jsonBufferTemp;
+    JsonObject& root = jsonBuffer.createObject();
     root["speed"] = presets[i].speed;
     root["delay"] = presets[i].delay;
     root["hue"] = presets[i].hue;
@@ -145,7 +155,7 @@ void serializeJSON_presets(char * json) {
     root["num_devices"] = presets[i].num_devices;
     array.add(root);
   }
-  array.printTo(json, jsonSendSize*3);
+  array.printTo(json, jsonBuffer.size());
   if (SERIAL_DEBUG) array.prettyPrintTo(Serial);
 }
 
@@ -164,9 +174,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         // num is client ID (because I am a websocket server!)
         IPAddress ip = webSocket.remoteIP(num);
         if (SERIAL_DEBUG) Serial.printf("[ws] [%u] Connected from url: %u.%u.%u.%u%s replying...\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+        
+        loadPresets();
+        yield();
+        
         char presetJSON[jsonSendSize*3];
         serializeJSON_presets(presetJSON);
         webSocket.sendTXT(num, presetJSON);
+        
         char connJSON[jsonSendSize];
         serializeJSON_connected(connJSON);
         webSocket.sendTXT(num, connJSON);    // send to same client (num) that connected to me!

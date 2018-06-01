@@ -46,7 +46,7 @@ const char* host  = "dmx";                    // used for mDNS
 const char* ssid  =       "SSID";
 const char* password =    "PASSWORD";
 const char* ssid_AP  =    "DMX";
-const char* password_AP = "zygote";
+const char* password_AP = "dmxzygote";        // should be at least 8 characters!
 
 IPAddress local_IP(10, 0, 0, 1);              // static IP  - use staticIP[index] to get & set individual octets
 IPAddress gateway(10, 0, 0, 1);               // gateway (for static)
@@ -81,5 +81,6 @@ struct State {
 
 #define NUM_PRESETS 3
 struct State presets[NUM_PRESETS];
+bool savePresetFlag = false;
 
 #endif /* SETTINGS_H */

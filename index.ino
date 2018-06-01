@@ -11,6 +11,13 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     background-color: #FFFFFF;
     font-family: Arial, Helvetica, Sans-Serif;
     color: #020202;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    -khtml-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    user-select:none;
+    
   }
   .container {
     width: 85%;
@@ -114,10 +121,11 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         <h1>Pixel Controller</h1>
       </header>
 
-      <h3>PRESETS (HOLD TO SAVE):</h3>
-        <button id="preset1" class="preset" style="background-color:#EEE" onmousedown="checkPreset(1);" onmouseup="setPreset(1)">Preset 1</button>
-        <button id="preset2" class="preset" style="background-color:#EEE" onmousedown="checkPreset(2);" onmouseup="setPreset(2)">Preset 2</button>
-        <button id="preset3" class="preset" style="background-color:#EEE" onmousedown="checkPreset(3);" onmouseup="setPreset(3)">Preset 3</button>
+      <h3>PRESETS: <span class="label">(HOLD TO SAVE)</span></h3>
+      <!-- NOTE: change this callbacks to event listeners?? --> 
+        <button id="preset1" class="preset" style="background-color:#EEE" onmousedown="checkPreset(1, event);" ontouchstart="checkPreset(1, event);" onmouseup="setPreset(1)" ontouchend="setPreset(1)">Preset 1</button>
+        <button id="preset2" class="preset" style="background-color:#EEE" onmousedown="checkPreset(2, event);" ontouchstart="checkPreset(2, event);" onmouseup="setPreset(2)" ontouchend="setPreset(2)">Preset 2</button>
+        <button id="preset3" class="preset" style="background-color:#EEE" onmousedown="checkPreset(3, event);" ontouchstart="checkPreset(3, event);" onmouseup="setPreset(3)" ontouchend="setPreset(3)">Preset 3</button>
 
       <h3>ANIMATION SPEED: <span class="label" id="label_s"></span></h3>
         <input class="enabled slider" id="s" type="range" min="0" max="255" step="1" oninput="updateValues();" value="127">
@@ -185,10 +193,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     let connection; 
 
 
-
     if (sendWS) {
-      //connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
-      connection = new WebSocket('ws://127.0.0.1:8080/');
+      connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
+      //connection = new WebSocket('ws://127.0.0.1:8080/');
       connection.onopen = function () {
         //initializeStates();
         connection.send('Connect ' + new Date());
@@ -275,7 +282,10 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     }
 
 
-    function checkPreset(presetNum) {
+    function checkPreset(presetNum, event) {
+      // if (event.type === "click" && event.button !== 0) {
+      //   return;
+      // }
       timer_id = setTimeout(function() { 
         savePreset(presetNum) 
       }, hold_time);
@@ -400,6 +410,16 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       console.log('mode: ' + state.mode);
     };
 
+    //disable right click for preset buttons (needed for mobile browser)
+    let nodes = document.getElementsByClassName("preset");
+    for (let node of nodes) {
+      node.addEventListener("contextmenu", function (event) {
+        event.preventDefault();
+        //event.stopPropagation();
+        //return false;
+      });
+    }
+
     // restyle color picker:
     // let color_picker = document.getElementById("col");
     // let color_picker_wrapper = document.getElementById("color-picker-wrapper");
@@ -412,37 +432,3 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 </body>
 </html>
 )rawliteral";
-
-/*
-<script>
-var websock;
-function start() {
-  websock = new WebSocket('ws://' + window.location.hostname + ':81/');
-  websock.onopen = function(evt) { console.log('websock open'); };
-  websock.onclose = function(evt) { console.log('websock close'); };
-  websock.onerror = function(evt) { console.log(evt); };
-  websock.onmessage = function(evt) {
-    console.log(evt);
-    var e = document.getElementById('ledstatus');
-    if (evt.data === 'ledon') {
-      e.style.color = 'red';
-    }
-    else if (evt.data === 'ledoff') {
-      e.style.color = 'black';
-    }
-    else {
-      console.log('unknown event');
-    }
-  };
-}
-function buttonclick(e) {
-  websock.send(e.id);
-}
-</script>
-
-<body onload="javascript:start();">
-<h1>ESP8266 WebSocket Demo</h1>
-<div id="ledstatus"><b>LED</b></div>
-<button id="ledon"  type="button" onclick="buttonclick(this);">On</button> 
-<button id="ledoff" type="button" onclick="buttonclick(this);">Off</button>
- */

@@ -21,7 +21,6 @@ ESP8266WebServer server(80);            // http server
 
 
 
-
 /* format bytes helper function */
 String formatBytes(size_t bytes) {
   if (bytes < 1024) {
@@ -81,9 +80,6 @@ void setup() {
   serverInit();
   dmx.init(512);
 
-  //EEPROM.begin(512);
-  //EEPROM.get(addr, val);
-
   //sendTimer = millis();
   for (int i = 0; i < MAX_FIXTURES; i++) {
     leds[i].h = DEFAULT_HUE;
@@ -98,6 +94,11 @@ bool autoControl = false;
 void loop() {
   webSocket.loop();
   server.handleClient();
+  
+  if (savePresetFlag) {
+    savePresets();
+    savePresetFlag = false;
+  }
 
   /* button */
   static uint32_t buttonTimer;
@@ -152,4 +153,5 @@ void loop() {
     }
     dmx.update();
   }
+  yield();
 }

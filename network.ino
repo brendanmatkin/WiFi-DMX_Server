@@ -13,7 +13,7 @@ void networkInit() {
     Serial.print(ssid);
     WiFi.persistent(false);                   // don't re-write ssid/password to flash every time (avoid degredation)
     WiFi.mode(WIFI_STA);                      //
-    //WiFi.hostname(deviceName);                // DHCP Hostname    -- does this even work?!
+    //WiFi.hostname(deviceName);              // DHCP Hostname    -- does this even work?!
     WiFi.begin(ssid, password);               // connect to WiFi
   
     /* auto reset if it's not connecting (occasionally hangs otherwise) */
@@ -31,34 +31,12 @@ void networkInit() {
   /* who am I this time?  */
   delay(100);
   //Serial.printf("\nWiFi connected.\n");
-  Serial.printf("\nIP address:  ");
+  Serial.printf("IP address:  ");
   Serial.println(DMX_AP ? WiFi.softAPIP() : WiFi.localIP());
   //Serial.printf("OSC Address: %s\n", oscAddress.c_str());
   //if (ENABLE_WEBSOCKET) Serial.printf("Websocket looking for server at: %s:%u\n", serverIP.toString().c_str(), wsPort);
-  Serial.printf("%s (%s) ready. \n", deviceName.c_str(), WiFi.macAddress().c_str());
-  Serial.printf("\n---\n\n");
-  Serial.flush();
-}
-
-
-
-void spiffsInit() {
-  /* begin SPIFFS */
-  Serial.print("Mounting file system...");
-  if (SPIFFS.begin()) {
-    Dir dir = SPIFFS.openDir("/");
-    while (dir.next()) {
-      String fileName = dir.fileName();
-      size_t fileSize = dir.fileSize();
-      Serial.printf("FS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
-    }
-    Serial.printf("\n");
-  }
-  else {
-    Serial.println("Failed to mount file system");
-    return;
-  }
-  Serial.println(" mounted.");
+//  Serial.printf("%s (%s) ready. \n", deviceName.c_str(), WiFi.macAddress().c_str());
+//  Serial.printf("\n---\n\n");
 }
 
 
@@ -113,5 +91,8 @@ void serverInit() {
   server.onNotFound ( handleNotFound );
   server.begin();
   Serial.println ( "HTTP server started" );
+
+  Serial.printf("%s (%s) ready. \n", deviceName.c_str(), WiFi.macAddress().c_str());
+  Serial.printf("\n---\n\n");
 }
 
