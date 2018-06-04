@@ -67,14 +67,14 @@ bool loadPresets() {
       //if (SERIAL_DEBUG) Serial.printf("[load] SIZE2: %d  ", jsonBuffer2.size());
       //if (SERIAL_DEBUG) Serial.printf("P%u.preset=%u  ", i, presets[i].preset);
       if (SERIAL_DEBUG){
-        Serial.printf("[lP] hue[%u]:%u\n", i, presets[i].hue);
-        Serial.printf("[lP] array[%u] hue:%u\n", i, (uint8_t)array[i]["hue"]);
+        Serial.printf("[load] hue[%u]:%u\n", i, presets[i].hue);
+        Serial.printf("[load] array[%u] hue:%u\n", i, (uint8_t)array[i]["hue"]);
       }
     }
     if (SERIAL_DEBUG) Serial.printf("\n");
   }
   if (SERIAL_DEBUG) {
-    Serial.printf("[lP] ");
+    Serial.printf("[load] ");
     array.prettyPrintTo(Serial);
   }
   presetFile.close();
@@ -111,8 +111,8 @@ bool savePresets() {
     root["num_devices"] = presets[i].num_devices;
     json.add(root);
     if (SERIAL_DEBUG) {
-      Serial.printf("[sP] hue[%u]:%u\n", i, presets[i].hue);
-      Serial.printf("[sP] array[%u] hue:%u\n", i, (uint8_t)json[i]["hue"]);
+      Serial.printf("[save] hue[%u]:%u\n", i, presets[i].hue);
+      Serial.printf("[save] array[%u] hue:%u\n", i, (uint8_t)json[i]["hue"]);
     }
   }
   if (SERIAL_DEBUG) Serial.printf("[save] buffersize: %d\n", jsonBuffer.size());

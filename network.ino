@@ -58,6 +58,9 @@ void mdnsInit() {
   else {
     Serial.print("mDNS failed");
   }
+
+  MDNS.addService("http", "tcp", 80);
+  MDNS.addService("ws", "tcp", 81);
 }
 
 

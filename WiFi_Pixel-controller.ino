@@ -61,7 +61,7 @@ void setup() {
   spiffsInit();
   networkInit();                            // connect to wifi, init osc and websockets, print status.
   websocketInit();
-  mdnsInit();
+  //mdnsInit();
   serverInit();
   dmx.init(512);
 
@@ -77,8 +77,8 @@ void setup() {
 }
 
 
-bool autoControl = false;
 
+bool autoControl = false;
 void loop() {
   webSocket.loop();
   server.handleClient();
