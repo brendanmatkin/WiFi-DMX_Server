@@ -7,8 +7,14 @@
 #include <ESP8266mDNS.h>
 #include <WebSocketsServer.h>
 #include <Hash.h>
-
 #include <FastLED.h>
+
+#include "wificonfig.h"   
+// to track and stop tracking config.h: 
+// git update-index --assume-unchanged FILE_NAME 
+// git update-index --no-assume-unchanged FILE_NAME
+
+
 
 //#define DBG_OUTPUT_PORT Serial
 const bool SERIAL_DEBUG = true;
@@ -43,10 +49,10 @@ float fwCheckButtonTime = 2000.0f;            // how long to hold button down.
 uint8_t address   = 99;                       // set by DIPs (if you see 99 then it's wrong!)
 String deviceName = "DMX_Server";             // used for DHCP
 const char* host  = "dmx";                    // used for mDNS
-const char* ssid  =       "SSID";
-const char* password =    "PASSWORD";
-const char* ssid_AP  =    "DMX";
-const char* password_AP = "dmxzygote";        // should be at least 8 characters!
+const char* ssid  = "your-ssid";              // unused for now
+const char* password = "your-password";       // unused for now
+const char* ssid_AP  = WIFI_SSID;             // see wificonfig.h
+const char* password_AP = WIFI_PASSWORD;      // see wificonigh.h - **should be at least 8 characters!**
 
 IPAddress local_IP(10, 0, 0, 1);              // static IP  - use staticIP[index] to get & set individual octets
 IPAddress gateway(10, 0, 0, 1);               // gateway (for static)
