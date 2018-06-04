@@ -17,22 +17,6 @@ DMXESPSerial dmx;                       // dmx.write(ch 1-512, val 0-255), dmx.u
 #define BOOTLOAD_PIN  0                 // BOOTLOAD button
 
 ESP8266WebServer server(80);            // http server
-//File fsUploadFile;                      // holds the current upload
-
-
-
-/* format bytes helper function */
-String formatBytes(size_t bytes) {
-  if (bytes < 1024) {
-    return String(bytes) + "B";
-  } else if (bytes < (1024 * 1024)) {
-    return String(bytes / 1024.0) + "KB";
-  } else if (bytes < (1024 * 1024 * 1024)) {
-    return String(bytes / 1024.0 / 1024.0) + "MB";
-  } else {
-    return String(bytes / 1024.0 / 1024.0 / 1024.0) + "GB";
-  }
-}
 
 
 
@@ -64,6 +48,7 @@ void setup() {
   Serial.flush();
 
   /* init preset states */
+  // do this so we don't have any empty structs.. 
   for (int i = 0; i < NUM_PRESETS; i++) {
     presets[i] = state;                     // copy default state into presets for now (store in EEPROM or SPIFFS later)
     presets[i].preset = i+1;
@@ -79,6 +64,9 @@ void setup() {
   mdnsInit();
   serverInit();
   dmx.init(512);
+
+  // now set the state to the (now loaded from FS) 'Preset 1'
+  state = presets[0];
 
   //sendTimer = millis();
   for (int i = 0; i < MAX_FIXTURES; i++) {

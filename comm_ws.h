@@ -40,7 +40,9 @@ local struct:
 */
 
 
-/*---------- JSON serialize/deserialize ----------*/
+
+/* --------- JSON Deserialize --------- */
+/* (read JSON from websocket callback. Works for Presets (ARRAY) and State (SINGLE OBJECT)) */
 const uint16_t jsonReceiveSize = 256;
 bool deserializeJSON(uint8_t * json) {
   StaticJsonBuffer<jsonReceiveSize*3> jsonBuffer;     // actually only needs to be about 240 bytes, extra reserved for future use (or just because I have the space..). (http://arduinojson.org/assistant/)
@@ -54,8 +56,6 @@ bool deserializeJSON(uint8_t * json) {
     else {
       if (SERIAL_DEBUG) Serial.printf("[JSON] JSON Array test values: ");
       for (int i = 0; i < NUM_PRESETS; i++) {
-//        StaticJsonBuffer<jsonReceiveSize> jsonBuffer2;
-//        JsonObject& root = jsonBuffer2.createObject();
         presets[i].speed = array[i]["speed"];
         presets[i].delay = array[i]["delay"];
         presets[i].hue   = array[i]["hue"];
@@ -91,21 +91,26 @@ bool deserializeJSON(uint8_t * json) {
       for (int i = 0; i < currentFixtures; i++) {
         leds[i].h = state.hue;
       }
+      
       // MODE: 
       uint8_t _mode = root["mode"];
       state.mode = (Mode) _mode;
+      
       // HUE CYCLE:
       state.hue_cycle = root["hue_cycle"];
       if (state.hue_cycle == 0) hueCycleSpeed = 0;
       else hueCycleSpeed = map(state.hue_cycle, 0, 255, 175, 1);
+      
       // BRIGHTNESS, WHITE:
       state.brightness = root["brightness"];
       state.white = root["white"];
       for (int i = 0; i < currentFixtures; i++) {
         whiteLeds[i].r = root["white"];   // using red channel of fastLED for white control
       }
+      
       // PRESET:
       state.preset = root["preset"];
+      
       // NUMBER OF DEVICES:
       state.num_devices = root["num_devices"];
     }
@@ -117,8 +122,10 @@ bool deserializeJSON(uint8_t * json) {
   }
 }
 
+/* --------- JSON Serialize State --------- */
+/* (prep current state to send over websockets. Called when a client connects ) */
 const uint16_t jsonSendSize = 256;
-void serializeJSON_connected(char * json) {
+void serializeJSON_state(char * json) {
   // send state: 
   StaticJsonBuffer<jsonSendSize> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
@@ -136,10 +143,11 @@ void serializeJSON_connected(char * json) {
   if (SERIAL_DEBUG) root.prettyPrintTo(Serial);
 }
 
+/* --------- JSON Serialize Presets --------- */
+/* (prep current presets to send over websockets. Called when a client connects ) */
 void serializeJSON_presets(char * json) {
   // send presets: 
-  //StaticJsonBuffer<jsonSendSize*3> jsonBufferArray;
-  DynamicJsonBuffer jsonBuffer;
+  DynamicJsonBuffer jsonBuffer;                       // switched to dynamic array - static array causing problems in for-loops
   JsonArray& array = jsonBuffer.createArray();
   for (int i = 0; i < NUM_PRESETS; i++) {
     //StaticJsonBuffer<jsonSendSize> jsonBufferTemp;
@@ -183,7 +191,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         webSocket.sendTXT(num, presetJSON);
         
         char connJSON[jsonSendSize];
-        serializeJSON_connected(connJSON);
+        serializeJSON_state(connJSON);
         webSocket.sendTXT(num, connJSON);    // send to same client (num) that connected to me!
       }
       break;
