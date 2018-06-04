@@ -25,6 +25,7 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
   }
   h3 {
     text-transform: lowercase;
+    margin: 1.1em 0 0.75em;
   }
 
   .label {
@@ -80,10 +81,11 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
   }
 
   .fields {
-    padding: 1px;
+    padding: 2px;
     width: 100px;
     font-size:16px;
-    margin: 0;
+    /*margin: 0;*/
+    margin: -10px 0;
   }
 
   button {
@@ -107,6 +109,55 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
     margin: 1%;
     cursor: pointer;
   }
+
+
+  /* toggle switch stuff: */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+    top: -5px;
+  }
+  .switch input {display:none;}
+  .slide-switch {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e0e0e0;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 34px;
+  }
+  .slide-switch:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  input:checked + .slide-switch {
+    background-color: #101010;
+    opacity:0.7;
+  }
+  input:focus + .slide-switch {
+    box-shadow: 0 0 1px #101010;
+    opacity:0.7;
+  }
+  input:checked + .slide-switch:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+  }
+
 /*  button.preset {
     width:22%;
   }*/
@@ -157,7 +208,13 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       -->
       <h3>NUMBER OF FIXTURES:</h3>
         <input class="fields" id="numDev" type="number" name="num" min="1" max="40" placeholder="number" oninput="updateValues();">
-    
+      
+      <h3>ENABLE SEND: <span class="label" id="label_es">yes</span></h3>
+      <!--<span style="margin: 0px -10px 0px 30px;">enable send: </span>-->
+        <label class="switch">
+          <input type="checkbox" id="sendToggle" checked>
+          <span class="slide-switch"></span>
+        </label>
     </div>
 
   <script>
@@ -408,8 +465,9 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
       if (state.preset != 0 && cancelPreset) setPreset(0, false); // manual changes override preset! 
       if (sendWS) connection.send(JSON.stringify(state));
       console.log('mode: ' + state.mode);
-    };
+    }
 
+    /* EVENT LISTENERS */
     //disable right click for preset buttons (needed for mobile browser)
     let nodes = document.getElementsByClassName("preset");
     for (let node of nodes) {
@@ -418,6 +476,25 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
         //event.stopPropagation();
         //return false;
       });
+    }
+
+    let _toggler = document.getElementById("sendToggle");
+    _toggler.addEventListener('click', function() {
+      setSendWS(_toggler.checked);
+    });
+
+
+    function setSendWS(setSend) {
+      console.log("setSendWS: " + setSend);
+      if (setSend) {
+        sendWS = true;
+        sendStateToWS();
+        document.getElementById('label_es').innerHTML = "yes";
+      }
+      else {
+        sendWS = false;
+        document.getElementById('label_es').innerHTML = "no";
+      }
     }
 
     // restyle color picker:
