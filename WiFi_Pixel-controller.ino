@@ -70,7 +70,7 @@ void setup() {
 
   //sendTimer = millis();
   for (int i = 0; i < MAX_FIXTURES; i++) {
-    leds[i].h = DEFAULT_HUE;
+    leds[i].h = state.hue;
     leds[i].s = 255;
   }
   yield();
@@ -96,20 +96,20 @@ void loop() {
   else if (digitalRead(BOOTLOAD_PIN) == LOW && millis() - buttonTimer >= 2000) {
     buttonTimer = millis();
     //autoControl = !autoControl;
-    if (mode == AUTO) mode = MANUAL;
-    else mode = AUTO;
+    if (state.mode == AUTO) state.mode = MANUAL;
+    else state.mode = AUTO;
     if (SERIAL_DEBUG) Serial.printf("[button] autoControl now %s\n", autoControl ? "true" : "false");
     if (!autoControl) setZygoteDMX(0, 0, 0, 0, 0);          // fixture # 0 to off.
   }
 
   /* DMX */
   static uint32_t timer;
-  if (millis() - timer > DMX_PERIOD) {
+  if (millis() - timer > DMX_PERIOD) {                  // how often to send a DMX frame
     timer = millis();
-    switch (mode) {
+    switch (state.mode) {
       case AUTO:      // currently off
         //frameCounter = 0;                             // helps to start fades from 0 I think?
-        for (int i = 0; i < currentFixtures; i++) {
+        for (int i = 0; i < state.num_devices; i++) {
           //          float _temp = leds[i].v;
           //          _temp*=0.99;
           //          leds[i].v=(uint8_t
@@ -124,13 +124,13 @@ void loop() {
       case MANUAL:
         if (millis() - hueTimer > hueCycleSpeed && hueCycleSpeed != 0) {
           hueTimer = millis();
-          for (int i = 0; i < currentFixtures; i++) {
+          for (int i = 0; i < state.num_devices; i++) {
             leds[i].h++;
           }
         }
-        for (int i = 0; i < currentFixtures; i++) {
+        for (int i = 0; i < state.num_devices; i++) {
           leds[i].s = 255;
-          leds[i].v = brightness;
+          leds[i].v = state.brightness;
           CRGB _temp = leds[i];
           setZygoteDMX( i, _temp.r, _temp.g, _temp.b, whiteLeds[i].r);
           //setZygoteDMX(i, leds[i].r, leds[i].g, leds[i].b, whiteLeds[i].r);

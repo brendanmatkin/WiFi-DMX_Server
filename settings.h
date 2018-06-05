@@ -23,10 +23,10 @@ const bool SERIAL_DEBUG = true;
 
 
 /* -- led settings -- */
-#define DEFAULT_HUE       160
-#define DMX_PERIOD        25.0f                  // 25ms = 40 fps
+//#define DEFAULT_HUE       160
+#define DMX_PERIOD        25.0f               // 25ms = 40 fps
 #define MAX_FIXTURES      40                  // maximum number of pixels to control (currently considering each fixture 1 pixel because zygotes).
-uint8_t currentFixtures = 8;
+//uint8_t currentFixtures = 8;
 CHSV leds[MAX_FIXTURES];
 CRGB whiteLeds[MAX_FIXTURES];
 

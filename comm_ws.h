@@ -86,11 +86,16 @@ bool deserializeJSON(uint8_t * json) {
     else {
       // SDC(/LFO):
       state.speed = root["speed"];
+        sdc_speed = (256 - state.speed)/5.0f;
       state.delay = root["delay"];
       state.hue   = root["hue"];
-      for (int i = 0; i < currentFixtures; i++) {
-        leds[i].h = state.hue;
-      }
+        static uint8_t previousHue;
+        if (state.hue != previousHue) {
+          for (int i = 0; i < state.num_devices; i++) {
+            leds[i].h = state.hue;
+          }
+          previousHue = state.hue;
+        }
       
       // MODE: 
       uint8_t _mode = root["mode"];
@@ -104,7 +109,7 @@ bool deserializeJSON(uint8_t * json) {
       // BRIGHTNESS, WHITE:
       state.brightness = root["brightness"];
       state.white = root["white"];
-      for (int i = 0; i < currentFixtures; i++) {
+      for (int i = 0; i < state.num_devices; i++) {
         whiteLeds[i].r = root["white"];   // using red channel of fastLED for white control
       }
       

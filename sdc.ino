@@ -56,13 +56,13 @@ uint32_t frameCounter;
 void sdcZygotes() {
   if (millis() - hueTimer > hueCycleSpeed && hueCycleSpeed != 0) {
     hueTimer = millis();
-    for (int i = 0; i < currentFixtures; i++) {
+    for (int i = 0; i < state.num_devices; i++) {
       leds[i].h++;
     }
   }
   frameCounter++;
-  for (int i = 0; i < currentFixtures; i++) {
-    uint8_t _bright = sin8((frameCounter * DMX_PERIOD / sdc_speed) + sdc_delay * i);
+  for (int i = 0; i < state.num_devices; i++) {
+    uint8_t _bright = sin8((frameCounter * DMX_PERIOD / sdc_speed) + state.delay * i);
     //float bright = (exp(sin(frameCounter*DMX_PERIOD/6)) - 0.36787944)*108.0;
     int bright = map(_bright, 1, 255, -35, 255);
     bright = constrain(bright, 0, 255);
